@@ -90,6 +90,33 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireAuthenticatedUser());
 });
 
+// Lee los orígenes permitidos desde appsettings.json.
+var allowedOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
+if (allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "No se configuraron orígenes permitidos para CORS.");
+}
+
+// Configura CORS para permitir solicitudes desde los frontends.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "FrontendPolicy",
+        policy =>
+        {
+            policy
+                .WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 // Servicio encargado de generar los JWT.
 builder.Services.AddSingleton<JwtTokenService>();
 
@@ -106,12 +133,14 @@ var app = builder.Build();
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
 
+// CORS debe ejecutarse antes de autenticación y autorización.
+app.UseCors("FrontendPolicy");
+
 // La autenticación debe ejecutarse antes de la autorización.
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Health check propio del Gateway.
-// Es público porque no tiene RequireAuthorization().
 app.MapGet("/health", (HttpContext context) =>
 {
     var correlationId =
