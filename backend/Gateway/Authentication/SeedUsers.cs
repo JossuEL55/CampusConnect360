@@ -8,49 +8,49 @@ public static class SeedUsers
         new(
             "secretaria",
             "Secretaría Académica",
-            "Academic",
-            "Demo2026*"),
+            "Academic"),
 
         new(
             "finanzas",
             "Área Financiera",
-            "Finance",
-            "Demo2026*"),
+            "Finance"),
 
         new(
             "docente",
             "Docente / Bienestar",
-            "Teacher",
-            "Demo2026*"),
+            "Teacher"),
 
         new(
             "direccion",
             "Dirección General",
-            "Director",
-            "Demo2026*"),
+            "Director"),
 
         new(
             "admin",
             "Administrador",
-            "Admin",
-            "Demo2026*")
+            "Admin")
     ];
 
     public static SeedUser? Validate(
         string username,
-        string password)
+        string password,
+        string configuredPassword)
     {
+        if (string.IsNullOrWhiteSpace(configuredPassword) ||
+            password != configuredPassword)
+        {
+            return null;
+        }
+
         return All.FirstOrDefault(user =>
             string.Equals(
                 user.Username,
                 username,
-                StringComparison.OrdinalIgnoreCase) &&
-            user.Password == password);
+                StringComparison.OrdinalIgnoreCase));
     }
 }
 
 public sealed record SeedUser(
     string Username,
     string FullName,
-    string Role,
-    string Password);
+    string Role);

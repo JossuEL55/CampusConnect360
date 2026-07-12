@@ -170,7 +170,8 @@ app.MapPost(
     "/api/auth/login",
     (
         LoginRequest request,
-        JwtTokenService tokenService) =>
+        JwtTokenService tokenService,
+        IConfiguration configuration) =>
     {
         if (string.IsNullOrWhiteSpace(
                 request.Username) ||
@@ -188,9 +189,22 @@ app.MapPost(
                 });
         }
 
+        var demoPassword =
+            configuration["Auth:DemoPassword"];
+
+        if (string.IsNullOrWhiteSpace(demoPassword))
+        {
+            return Results.Problem(
+                title: "Configuración de autenticación incompleta",
+                detail:
+                    "No se configuró la contraseña de los usuarios de demostración.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
         var user = SeedUsers.Validate(
             request.Username.Trim(),
-            request.Password);
+            request.Password,
+            demoPassword);
 
         if (user is null)
         {
