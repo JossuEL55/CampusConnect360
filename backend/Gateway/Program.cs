@@ -1,19 +1,117 @@
+using System.Security.Claims;
+using System.Text;
+using Gateway.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using SharedKernel.Configuration;
 using SharedKernel.Observability;
 
+// Crea y configura la aplicación Gateway.
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddCampusSerilog("Gateway");
 
+// Vincula la sección "Jwt" de appsettings.json con JwtOptions.
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection(
+        JwtOptions.SectionName));
+
+// Obtiene la configuración JWT para validar y generar tokens.
+var jwtOptions =
+    builder.Configuration
+        .GetSection(JwtOptions.SectionName)
+        .Get<JwtOptions>()
+    ?? throw new InvalidOperationException(
+        "No se encontró la configuración JWT.");
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Secret) ||
+    jwtOptions.Secret.Length < 32)
+{
+    throw new InvalidOperationException(
+        "La clave JWT debe tener al menos 32 caracteres.");
+}
+
+// Configura la autenticación mediante JWT Bearer.
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+
+                ValidIssuer = jwtOptions.Issuer,
+                ValidAudience = jwtOptions.Audience,
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            jwtOptions.Secret)),
+
+                ClockSkew = TimeSpan.Zero
+            };
+    });
+
+// Define las políticas utilizadas por las rutas de YARP.
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        "AcademicPolicy",
+        policy => policy.RequireRole(
+            "Academic",
+            "Admin"));
+
+    options.AddPolicy(
+        "FinancePolicy",
+        policy => policy.RequireRole(
+            "Finance",
+            "Admin"));
+
+    options.AddPolicy(
+        "TeacherPolicy",
+        policy => policy.RequireRole(
+            "Teacher",
+            "Admin"));
+
+    options.AddPolicy(
+        "DirectorPolicy",
+        policy => policy.RequireRole(
+            "Director",
+            "Admin"));
+
+    // Permite el acceso a cualquier usuario con un JWT válido.
+    options.AddPolicy(
+        "AuthenticatedPolicy",
+        policy => policy.RequireAuthenticatedUser());
+});
+
+// Servicio encargado de generar los JWT.
+builder.Services.AddSingleton<JwtTokenService>();
+
+// Carga las rutas y los clusters de YARP desde appsettings.json.
 builder.Services
     .AddReverseProxy()
     .LoadFromConfig(
-        builder.Configuration.GetSection("ReverseProxy"));
+        builder.Configuration.GetSection(
+            "ReverseProxy"));
 
 var app = builder.Build();
 
+// Middleware de observabilidad.
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
 
+// La autenticación debe ejecutarse antes de la autorización.
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Health check propio del Gateway.
+// Es público porque no tiene RequireAuthorization().
 app.MapGet("/health", (HttpContext context) =>
 {
     var correlationId =
@@ -28,8 +126,72 @@ app.MapGet("/health", (HttpContext context) =>
         correlationId,
         timestamp = DateTimeOffset.UtcNow
     });
-});
+})
+.AllowAnonymous();
 
+// Endpoint para iniciar sesión y generar un JWT.
+app.MapPost(
+    "/api/auth/login",
+    (
+        LoginRequest request,
+        JwtTokenService tokenService) =>
+    {
+        if (string.IsNullOrWhiteSpace(
+                request.Username) ||
+            string.IsNullOrWhiteSpace(
+                request.Password))
+        {
+            return Results.BadRequest(
+                new
+                {
+                    title =
+                        "Credenciales incompletas",
+                    status = 400,
+                    detail =
+                        "El usuario y la contraseña son obligatorios."
+                });
+        }
+
+        var user = SeedUsers.Validate(
+            request.Username.Trim(),
+            request.Password);
+
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        return Results.Ok(
+            tokenService.CreateToken(user));
+    })
+    .AllowAnonymous();
+
+// Endpoint para comprobar el usuario autenticado.
+app.MapGet(
+    "/api/auth/me",
+    (ClaimsPrincipal principal) =>
+    {
+        var username =
+            principal.Identity?.Name;
+
+        var fullName =
+            principal.FindFirst(
+                "fullName")?.Value;
+
+        var role =
+            principal.FindFirst(
+                ClaimTypes.Role)?.Value;
+
+        return Results.Ok(new
+        {
+            username,
+            fullName,
+            role
+        });
+    })
+    .RequireAuthorization();
+
+// Publica las rutas configuradas en ReverseProxy.
 app.MapReverseProxy();
 
 app.Run();

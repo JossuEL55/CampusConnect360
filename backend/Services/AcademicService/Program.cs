@@ -22,4 +22,12 @@ app.MapGet("/api/academic/health", (HttpContext context) =>
     });
 });
 
+app.MapGet(
+    "/api/academic/secure-test",
+    () => Results.Ok(new
+    {
+        service = "AcademicService",
+        access = "Granted"
+    }));
+
 app.Run();
