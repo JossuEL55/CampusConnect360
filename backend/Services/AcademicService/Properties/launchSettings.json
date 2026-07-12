@@ -1,20 +1,11 @@
 {
-  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "http": {
+    "AcademicService": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "applicationUrl": "http://localhost:5288",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
-    "https": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "applicationUrl": "https://localhost:7137;http://localhost:5288",
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5001",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

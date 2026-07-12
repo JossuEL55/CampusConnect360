@@ -35,10 +35,25 @@ public static class SerilogExtensions
         this WebApplication app)
     {
         app.UseSerilogRequestLogging(options =>
-        {
-            options.MessageTemplate =
-                "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-        });
+{
+    options.MessageTemplate =
+        "HTTP {RequestMethod} {RequestPath} responded {StatusCode} " +
+        "in {Elapsed:0.0000} ms";
+
+    options.EnrichDiagnosticContext = (
+        diagnosticContext,
+        httpContext) =>
+    {
+        var correlationId =
+            httpContext.Items[
+                CorrelationConstants.LogPropertyName
+            ]?.ToString();
+
+        diagnosticContext.Set(
+            CorrelationConstants.LogPropertyName,
+            correlationId ?? "unknown");
+    };
+    });
 
         return app;
     }
