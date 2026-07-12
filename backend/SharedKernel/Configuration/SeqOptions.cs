@@ -1,5 +1,6 @@
 namespace SharedKernel.Configuration;
 
+// Define la configuración utilizada para enviar logs estructurados al servidor Seq.
 public sealed class SeqOptions
 {
     public const string SectionName = "Seq";

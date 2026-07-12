@@ -1,6 +1,6 @@
 namespace SharedKernel.Configuration;
 
-//Opciones de configuración para la base de datos
+// Contiene la configuración compartida de conexión a PostgreSQL para cada servicio.
 public sealed class DatabaseOptions
 {
     public const string SectionName = "Database";

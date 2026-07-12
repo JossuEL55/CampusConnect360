@@ -1,6 +1,6 @@
 namespace SharedKernel.Configuration;
 
-///Opciones de configuración para RabbitMQ
+// Representa la configuración necesaria para establecer conexión con RabbitMQ.
 public sealed class RabbitMqOptions
 {
     public const string SectionName = "RabbitMq";
