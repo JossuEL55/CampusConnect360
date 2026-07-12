@@ -1,25 +1,30 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SharedKernel.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddCampusSerilog("AttendanceService");
+
+builder.Services
+    .AddHealthChecks()
+    .AddCheck(
+        "self",
+        () => HealthCheckResult.Healthy(
+            "AttendanceService está disponible."));
+
 var app = builder.Build();
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
 
-app.MapGet("/api/attendance/health", (HttpContext context) =>
-{
-    var correlationId =
-        context.Items[
-            CorrelationConstants.LogPropertyName
-        ]?.ToString();
-
-    return Results.Ok(new
+app.MapHealthChecks(
+    "/api/attendance/health",
+    new HealthCheckOptions
     {
-        service = "AttendanceService",
-        status = "Healthy",
-        correlationId,
-        timestamp = DateTimeOffset.UtcNow
+        ResponseWriter = (context, report) =>
+            HealthCheckResponseWriter.WriteAsync(
+                context,
+                report,
+                "AttendanceService")
     });
-});
 
 app.Run();

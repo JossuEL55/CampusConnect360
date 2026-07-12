@@ -1,26 +1,31 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SharedKernel.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddCampusSerilog("AcademicService");
+
+builder.Services
+    .AddHealthChecks()
+    .AddCheck(
+        "self",
+        () => HealthCheckResult.Healthy(
+            "AcademicService está disponible."));
+
 var app = builder.Build();
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
 
-app.MapGet("/api/academic/health", (HttpContext context) =>
-{
-    var correlationId =
-        context.Items[
-            CorrelationConstants.LogPropertyName
-        ]?.ToString();
-
-    return Results.Ok(new
+app.MapHealthChecks(
+    "/api/academic/health",
+    new HealthCheckOptions
     {
-        service = "AcademicService",
-        status = "Healthy",
-        correlationId,
-        timestamp = DateTimeOffset.UtcNow
+        ResponseWriter = (context, report) =>
+            HealthCheckResponseWriter.WriteAsync(
+                context,
+                report,
+                "AcademicService")
     });
-});
 
 app.MapGet(
     "/api/academic/secure-test",

@@ -11,6 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddCampusSerilog("Gateway");
 
+builder.Services.AddHttpClient(
+    "HealthAggregator",
+    client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(3);
+    });
+
 // Vincula la sección "Jwt" de appsettings.json con JwtOptions.
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(
@@ -220,7 +227,94 @@ app.MapGet(
     })
     .RequireAuthorization();
 
+
+app.MapGet(
+    "/health/services",
+    async (
+        IHttpClientFactory clientFactory,
+        IConfiguration configuration,
+        CancellationToken cancellationToken) =>
+    {
+        var services =
+            configuration
+                .GetSection("HealthServices")
+                .Get<Dictionary<string, string>>()
+            ?? [];
+
+        var client =
+            clientFactory.CreateClient(
+                "HealthAggregator");
+
+        var checks = new List<object>();
+        var healthyCount = 0;
+
+        foreach (var service in services)
+        {
+            try
+            {
+                using var request =
+                    new HttpRequestMessage(
+                        HttpMethod.Get,
+                        service.Value);
+
+                request.Headers.TryAddWithoutValidation(
+                    CorrelationConstants.HeaderName,
+                    Guid.NewGuid().ToString());
+
+                using var response =
+                    await client.SendAsync(
+                        request,
+                        cancellationToken);
+
+                var healthy =
+                    response.IsSuccessStatusCode;
+
+                if (healthy)
+                {
+                    healthyCount++;
+                }
+
+                checks.Add(new
+                {
+                    service = service.Key,
+                    status = healthy
+                        ? "Healthy"
+                        : "Unhealthy",
+                    statusCode =
+                        (int)response.StatusCode
+                });
+            }
+            catch (Exception exception)
+            {
+                checks.Add(new
+                {
+                    service = service.Key,
+                    status = "Unreachable",
+                    error = exception.Message
+                });
+            }
+        }
+
+        var overallStatus =
+            healthyCount == services.Count
+                ? "Healthy"
+                : healthyCount == 0
+                    ? "Down"
+                    : "Degraded";
+
+        return Results.Ok(new
+        {
+            ecosystem = "CampusConnect360",
+            status = overallStatus,
+            checkedAt = DateTimeOffset.UtcNow,
+            healthyServices = healthyCount,
+            totalServices = services.Count,
+            services = checks
+        });
+    })
+    .AllowAnonymous();
 // Publica las rutas configuradas en ReverseProxy.
 app.MapReverseProxy();
 
 app.Run();
+ 

@@ -1,25 +1,30 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SharedKernel.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddCampusSerilog("AnalyticsService");
+
+builder.Services
+    .AddHealthChecks()
+    .AddCheck(
+        "self",
+        () => HealthCheckResult.Healthy(
+            "AnalyticsService está disponible."));
+
 var app = builder.Build();
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
 
-app.MapGet("/api/analytics/health", (HttpContext context) =>
-{
-    var correlationId =
-        context.Items[
-            CorrelationConstants.LogPropertyName
-        ]?.ToString();
-
-    return Results.Ok(new
+app.MapHealthChecks(
+    "/api/analytics/health",
+    new HealthCheckOptions
     {
-        service = "AnalyticsService",
-        status = "Healthy",
-        correlationId,
-        timestamp = DateTimeOffset.UtcNow
+        ResponseWriter = (context, report) =>
+            HealthCheckResponseWriter.WriteAsync(
+                context,
+                report,
+                "AnalyticsService")
     });
-});
 
 app.Run();
