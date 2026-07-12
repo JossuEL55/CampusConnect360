@@ -1,1 +1,82 @@
-services: {}
+name: campusconnect360
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: campusconnect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - campus-network
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: campusconnect-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - -q
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - campus-network
+
+  seq:
+    image: datalust/seq:latest
+    container_name: campusconnect-seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_ADMIN_USERNAME}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD}
+    ports:
+      - "${SEQ_PORT}:80"
+      - "${SEQ_INGESTION_PORT}:5341"
+    volumes:
+      - seq_data:/data
+    networks:
+      - campus-network
+
+networks:
+  campus-network:
+    name: campusconnect-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: campusconnect-postgres-data
+
+  rabbitmq_data:
+    name: campusconnect-rabbitmq-data
+
+  seq_data:
+    name: campusconnect-seq-data
