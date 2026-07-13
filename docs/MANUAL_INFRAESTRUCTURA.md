@@ -50,6 +50,7 @@ Para ejecutar todo con Docker:
 - Git.
 - Docker Desktop con Docker Compose.
 - PowerShell.
+- Node.js
 
 Para ejecutar el backend sin Docker también se necesita .NET SDK 10. Node.js y npm serán necesarios para trabajar con el frontend.
 
