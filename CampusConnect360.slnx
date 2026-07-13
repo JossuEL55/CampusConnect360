@@ -10,4 +10,7 @@
     <Project Path="backend/Services/NotificationService/NotificationService.csproj" />
     <Project Path="backend/Services/PaymentService/PaymentService.csproj" />
   </Folder>
+  <Folder Name="/backend/Tests/">
+    <Project Path="backend/Tests/AnalyticsService.Tests/AnalyticsService.Tests.csproj" />
+  </Folder>
 </Solution>

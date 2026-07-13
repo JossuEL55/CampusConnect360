@@ -96,8 +96,7 @@ public static class AnalyticsEndpoints
         DateTimeOffset? from, DateTimeOffset? to, int? page, int? pageSize,
         CancellationToken cancellationToken)
     {
-        var currentPage = page is null or < 1 ? 1 : page.Value;
-        var currentPageSize = pageSize is null or < 1 or > 200 ? 20 : pageSize.Value;
+        var (currentPage, currentPageSize) = Pagination.Normalize(page, pageSize);
 
         const string filter = """
             WHERE (@type IS NULL OR event_type = @type)
@@ -167,8 +166,7 @@ public static class AnalyticsEndpoints
         NpgsqlDataSource dataSource, EcosystemMonitor monitor, int? page, int? pageSize,
         CancellationToken cancellationToken)
     {
-        var currentPage = page is null or < 1 ? 1 : page.Value;
-        var currentPageSize = pageSize is null or < 1 or > 200 ? 20 : pageSize.Value;
+        var (currentPage, currentPageSize) = Pagination.Normalize(page, pageSize);
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
 

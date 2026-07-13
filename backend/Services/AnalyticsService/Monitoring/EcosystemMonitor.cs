@@ -13,8 +13,6 @@ public sealed record EcosystemSnapshot(
 public sealed record ServiceHealth(string Name, string Status);
 
 // Consulta los health checks de los servicios y la profundidad de la DLQ en RabbitMQ.
-// Reglas del contrato (9.2): Healthy = todo OK y DLQ vacía; Degraded = un health fallido
-// o mensajes en DLQ; Down = broker caído o más de un servicio caído.
 public sealed class EcosystemMonitor(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,
@@ -45,13 +43,18 @@ public sealed class EcosystemMonitor(
 
         var (brokerUp, dlqDepth) = await GetDlqDepthAsync(client, cancellationToken);
 
-        var downCount = services.Count(service => service.Status != "Healthy");
-        var status = !brokerUp || downCount > 1 ? "Down"
-            : downCount == 1 || dlqDepth > 0 ? "Degraded"
-            : "Healthy";
+        var unhealthyServices = services.Count(service => service.Status != "Healthy");
+        var status = ComputeStatus(brokerUp, unhealthyServices, dlqDepth);
 
         return new EcosystemSnapshot(status, brokerUp, dlqDepth, services);
     }
+
+    // Reglas del contrato (9.2): Healthy = todo OK y DLQ vacía; Degraded = un health
+    // fallido o mensajes en DLQ; Down = broker caído o más de un servicio caído.
+    public static string ComputeStatus(bool brokerUp, int unhealthyServices, int dlqDepth) =>
+        !brokerUp || unhealthyServices > 1 ? "Down"
+        : unhealthyServices == 1 || dlqDepth > 0 ? "Degraded"
+        : "Healthy";
 
     private async Task<(bool BrokerUp, int DlqDepth)> GetDlqDepthAsync(HttpClient client, CancellationToken cancellationToken)
     {

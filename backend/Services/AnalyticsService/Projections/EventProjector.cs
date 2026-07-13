@@ -208,25 +208,9 @@ public sealed class EventProjector(NpgsqlDataSource dataSource, ILogger<EventPro
         await command.ExecuteNonQueryAsync(ct);
     }
 
-    // Los payloads pueden llegar en camelCase (contrato) o PascalCase (serializador .NET por defecto).
-    private static bool TryGetProperty(JsonElement payload, string camelName, out JsonElement value)
-    {
-        value = default;
-        if (payload.ValueKind != JsonValueKind.Object)
-        {
-            return false;
-        }
+    private static string? GetString(JsonElement payload, string name) => PayloadReader.GetString(payload, name);
 
-        return payload.TryGetProperty(camelName, out value)
-            || payload.TryGetProperty(char.ToUpperInvariant(camelName[0]) + camelName[1..], out value);
-    }
+    private static decimal GetDecimal(JsonElement payload, string name) => PayloadReader.GetDecimal(payload, name);
 
-    private static string? GetString(JsonElement payload, string name) =>
-        TryGetProperty(payload, name, out var value) && value.ValueKind != JsonValueKind.Null ? value.ToString() : null;
-
-    private static decimal GetDecimal(JsonElement payload, string name) =>
-        TryGetProperty(payload, name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDecimal() : 0m;
-
-    private static int? GetInt(JsonElement payload, string name) =>
-        TryGetProperty(payload, name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetInt32() : null;
+    private static int? GetInt(JsonElement payload, string name) => PayloadReader.GetInt(payload, name);
 }
