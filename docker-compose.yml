@@ -1,3 +1,5 @@
+# Docker Compose para levantar toda la aplicación de CampusConnect360, 
+#incluyendo servicios de backend, base de datos, RabbitMQ y Seq para logging.
 name: campusconnect360
 
 services:
@@ -65,6 +67,147 @@ services:
       - "${SEQ_INGESTION_PORT}:5341"
     volumes:
       - seq_data:/data
+    networks:
+      - campus-network
+
+  academic-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AcademicService/Dockerfile
+    image: campusconnect-academic:local
+    container_name: campusconnect-academic
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5001:8080"
+    depends_on:
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: backend/Services/PaymentService/Dockerfile
+    image: campusconnect-payment:local
+    container_name: campusconnect-payment
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5002:8080"
+    depends_on:
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  attendance-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AttendanceService/Dockerfile
+    image: campusconnect-attendance:local
+    container_name: campusconnect-attendance
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5003:8080"
+    depends_on:
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: backend/Services/NotificationService/Dockerfile
+    image: campusconnect-notification:local
+    container_name: campusconnect-notification
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5004:8080"
+    depends_on:
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AnalyticsService/Dockerfile
+    image: campusconnect-analytics:local
+    container_name: campusconnect-analytics
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5005:8080"
+    depends_on:
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Gateway/Dockerfile
+    image: campusconnect-gateway:local
+    container_name: campusconnect-gateway
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+
+      Jwt__Secret: ${JWT_SECRET}
+      Auth__DemoPassword: ${AUTH_DEMO_PASSWORD}
+
+      Seq__ServerUrl: http://seq:5341
+
+      HealthServices__AcademicService: http://academic-service:8080/api/academic/health
+      HealthServices__PaymentService: http://payment-service:8080/api/payments/health
+      HealthServices__AttendanceService: http://attendance-service:8080/api/attendance/health
+      HealthServices__NotificationService: http://notification-service:8080/api/notifications/health
+      HealthServices__AnalyticsService: http://analytics-service:8080/api/analytics/health
+
+      ReverseProxy__Clusters__academic-cluster__Destinations__academic-destination__Address: http://academic-service:8080
+      ReverseProxy__Clusters__payments-cluster__Destinations__payments-destination__Address: http://payment-service:8080
+      ReverseProxy__Clusters__attendance-cluster__Destinations__attendance-destination__Address: http://attendance-service:8080
+      ReverseProxy__Clusters__notifications-cluster__Destinations__notifications-destination__Address: http://notification-service:8080
+      ReverseProxy__Clusters__analytics-cluster__Destinations__analytics-destination__Address: http://analytics-service:8080
+
+    ports:
+      - "8088:8080"
+    depends_on:
+      academic-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      attendance-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+      seq:
+        condition: service_started
     networks:
       - campus-network
 
