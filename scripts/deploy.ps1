@@ -13,9 +13,13 @@ if (-not (Test-Path ".env")) {
 }
 
 Write-Host "Validando Docker..."
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
 docker info *> $null
+$dockerInfoExitCode = $LASTEXITCODE
+$ErrorActionPreference = $previousErrorActionPreference
 
-if ($LASTEXITCODE -ne 0) {
+if ($dockerInfoExitCode -ne 0) {
     Write-Error "Docker Desktop no está disponible o el motor no está iniciado."
     exit 1
 }
