@@ -157,9 +157,32 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       Seq__ServerUrl: http://seq:5341
+
+      Database__Host: postgres
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+
+      RabbitMqApi__BaseUrl: http://rabbitmq:15672
+      RabbitMqApi__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMqApi__Password: ${RABBITMQ_DEFAULT_PASS}
+
+      HealthServices__AcademicService: http://academic-service:8080/api/academic/health
+      HealthServices__PaymentService: http://payment-service:8080/api/payments/health
+      HealthServices__AttendanceService: http://attendance-service:8080/api/attendance/health
+      HealthServices__NotificationService: http://notification-service:8080/api/notifications/health
+      HealthServices__AnalyticsService: http://localhost:8080/api/analytics/health
     ports:
       - "5005:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
       seq:
         condition: service_started
     networks:
