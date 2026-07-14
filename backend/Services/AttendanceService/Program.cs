@@ -118,6 +118,12 @@ app.UseStatusCodePages();
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
 
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AttendanceDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 app.MapHealthChecks(
     "/api/attendance/health",
     new HealthCheckOptions

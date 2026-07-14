@@ -88,6 +88,13 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCorrelationId();
 app.UseCampusRequestLogging();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 app.MapHealthChecks("/api/notifications/health", new HealthCheckOptions
 {
     ResponseWriter = (context, report) =>
