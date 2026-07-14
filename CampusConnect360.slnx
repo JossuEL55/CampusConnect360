@@ -12,5 +12,6 @@
   </Folder>
   <Folder Name="/backend/Tests/">
     <Project Path="backend/Tests/AnalyticsService.Tests/AnalyticsService.Tests.csproj" />
+    <Project Path="backend/Tests/PaymentService.Tests/PaymentService.Tests.csproj" />
   </Folder>
 </Solution>

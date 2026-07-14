@@ -139,9 +139,26 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       Seq__ServerUrl: http://seq:5341
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+      Database__Schema: payments
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: /
     ports:
       - "5002:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
       seq:
         condition: service_started
     networks:
