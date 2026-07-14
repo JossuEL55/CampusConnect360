@@ -110,7 +110,7 @@ public sealed class AcademicOperations(AcademicDbContext db)
             EnrolledAt = DateTimeOffset.UtcNow
         };
 
-        var data = new StudentEnrolledData(
+        var data = new AcademicService.Api.StudentEnrolledData(
             student.Id,
             student.Code,
             $"{student.FirstName} {student.LastName}",
