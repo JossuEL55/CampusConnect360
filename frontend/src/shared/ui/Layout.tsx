@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuth } from '../auth/auth-context'
 import { canAccess, Roles } from '../auth/roles'
+import { LogOutIcon } from './icons'
 
 const NAV_ITEMS = [
   { to: '/academico', label: 'Académico', roles: [Roles.Academic] },
@@ -17,8 +18,8 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="shell">
       <header className="topbar">
         <span className="brand">
-          <span className="brand-mark" aria-hidden="true">C360</span>
-          CampusConnect
+          <span className="brand-mark" aria-hidden="true">C</span>{' '}
+          CampusConnect 360
         </span>
         <nav aria-label="Portales">
           {NAV_ITEMS.filter((item) => canAccess(user, item.roles)).map((item) => (
@@ -29,9 +30,14 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
         <div className="session">
           <span className="session-name">{user?.fullName}</span>
-          <span className="badge badge-brand">{user?.role}</span>
-          <button type="button" className="btn btn-ghost" onClick={logout}>
-            Salir
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={logout}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            <LogOutIcon />
           </button>
         </div>
       </header>

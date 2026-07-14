@@ -4,7 +4,6 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/auth/auth-context'
 import { homeFor } from '../../shared/auth/roles'
 import { useToast } from '../../shared/ui/toast'
-import { Field } from '../../shared/ui/bits'
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -24,50 +23,54 @@ export function LoginPage() {
       navigate(homeFor(logged.role), { replace: true })
     } catch (error) {
       notifyError(error)
-    } finally {
       setSubmitting(false)
     }
   }
 
   return (
     <div className="login-page">
-      <section className="login-hero">
-        <h1>CampusConnect 360</h1>
-        <p>
-          Ecosistema de integración para la red de colegios: matrícula, pagos, asistencia,
-          bienestar y analítica directiva en un solo lugar.
-        </p>
-      </section>
-      <section className="login-panel">
-        <form className="login-form" onSubmit={onSubmit}>
-          <h2>Iniciar sesión</h2>
-          <Field label="Usuario">
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-              required
-              autoFocus
-            />
-          </Field>
-          <Field label="Contraseña">
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </Field>
-          <button type="submit" className="btn" disabled={isSubmitting}>
-            {isSubmitting ? 'Verificando…' : 'Entrar'}
-          </button>
-          <p className="login-users">
-            Usuarios semilla: <code>secretaria</code> · <code>finanzas</code> ·{' '}
-            <code>docente</code> · <code>direccion</code> · <code>admin</code>
-          </p>
-        </form>
-      </section>
+      <main className="login-card" aria-busy={isSubmitting}>
+        <div className="progress-slot">{isSubmitting && <div className="progress-bar" aria-hidden="true" />}</div>
+        <div className="login-body">
+          <span className="login-brand">
+            <span className="brand-mark" aria-hidden="true">C</span>{' '}
+            CampusConnect 360
+          </span>
+          <h1>Iniciar sesión</h1>
+          <form onSubmit={onSubmit} className="login-form">
+            <label className="field">
+              <span className="field-label">Usuario</span>
+              <input
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+                required
+                autoFocus
+                disabled={isSubmitting}
+              />
+            </label>
+            <label className="field">
+              <span className="field-label">Contraseña</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                required
+                disabled={isSubmitting}
+              />
+            </label>
+            <div className="login-actions">
+              <button type="submit" className="btn" disabled={isSubmitting}>
+                {isSubmitting ? 'Conectando…' : 'Entrar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+      <footer className="login-footer">
+        Acceso exclusivo para personal autorizado de la red de colegios.
+      </footer>
     </div>
   )
 }
