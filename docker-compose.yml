@@ -30,6 +30,9 @@ services:
   rabbitmq:
     image: rabbitmq:4-management-alpine
     container_name: campusconnect-rabbitmq
+    # Nombre de nodo estable: RabbitMQ guarda sus datos por hostname y al recrear
+    # el contenedor Docker asigna uno nuevo, dejando el broker con estado en blanco.
+    hostname: campus-rabbitmq
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
