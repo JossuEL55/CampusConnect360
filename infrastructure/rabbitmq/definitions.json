@@ -44,7 +44,10 @@
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
-      "arguments": {}
+      "arguments": {
+        "x-dead-letter-exchange": "campus.dlx",
+        "x-dead-letter-routing-key": "notifications.dead-letter"
+      }
     },
     {
       "name": "notifications.inbox",

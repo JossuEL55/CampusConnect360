@@ -54,6 +54,28 @@ services:
     networks:
       - campus-network
 
+  rabbitmq-init:
+    image: rabbitmq:4-management-alpine
+    container_name: campusconnect-rabbitmq-init
+    restart: "no"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ./infrastructure/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - >-
+        rabbitmqadmin --host rabbitmq --port 15672
+        --username "$${RABBITMQ_DEFAULT_USER}"
+        --password "$${RABBITMQ_DEFAULT_PASS}"
+        definitions import --file /etc/rabbitmq/definitions.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - campus-network
+
   seq:
     image: datalust/seq:latest
     container_name: campusconnect-seq
@@ -81,9 +103,26 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       Seq__ServerUrl: http://seq:5341
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+      Database__Schema: academic
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: /
     ports:
       - "5001:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
       seq:
         condition: service_started
     networks:
