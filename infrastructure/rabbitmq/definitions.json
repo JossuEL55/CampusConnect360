@@ -1,24 +1,7 @@
 {
-  "users": [
-    {
-      "name": "campus",
-      "password_hash": "yv4gJp9H3cl6mJOl2oy3oSjeo6OapRlKrAmm5C5LY3tU1lVY",
-      "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": ["administrator"]
-    }
-  ],
   "vhosts": [
     {
       "name": "/"
-    }
-  ],
-  "permissions": [
-    {
-      "user": "campus",
-      "vhost": "/",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
     }
   ],
   "exchanges": [
@@ -61,7 +44,10 @@
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
-      "arguments": {}
+      "arguments": {
+        "x-dead-letter-exchange": "campus.dlx",
+        "x-dead-letter-routing-key": "notifications.dead-letter"
+      }
     },
     {
       "name": "notifications.inbox",
