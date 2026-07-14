@@ -36,7 +36,11 @@ builder.Services.AddScoped<IStudentEnrollmentProjectionService,
 builder.Services.AddScoped<DevelopmentDataSeeder>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
+builder.Services.AddSingleton<IOutboxMessagePublisher,
+    RabbitMqOutboxMessagePublisher>();
+builder.Services.AddScoped<OutboxProcessor>();
 builder.Services.AddHostedService<StudentEnrolledConsumer>();
+builder.Services.AddHostedService<OutboxPublisherWorker>();
 
 var databaseSection = builder.Configuration.GetSection(
     DatabaseOptions.SectionName);

@@ -1,16 +1,24 @@
+using System.Text.Json;
 using AttendanceService.Application.Contracts.Requests;
 using AttendanceService.Application.Contracts.Responses;
 using AttendanceService.Application.Validation;
 using AttendanceService.Domain.Entities;
 using AttendanceService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using SharedKernel.Events;
+using SharedKernel.Messaging;
 
 namespace AttendanceService.Application.Services;
 
 public sealed class AttendanceApplicationService(
     AttendanceDbContext dbContext,
-    TimeProvider timeProvider) : IAttendanceApplicationService
+    TimeProvider timeProvider,
+    ILogger<AttendanceApplicationService> logger) : IAttendanceApplicationService
 {
+    private static readonly JsonSerializerOptions JsonOptions =
+        new(JsonSerializerDefaults.Web);
+
     public async Task<OperationResult<PagedResponse<StudentListItemResponse>>>
         GetStudentsAsync(
             StudentsQueryParameters query,
@@ -103,8 +111,26 @@ public sealed class AttendanceApplicationService(
             CreatedAt = timeProvider.GetUtcNow()
         };
 
-        dbContext.AttendanceRecords.Add(record);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        var envelope = EventEnvelopeFactory.Create(
+            EventTypes.AttendanceRecorded,
+            "AttendanceService",
+            record.Id,
+            record.CorrelationId,
+            new AttendanceRecordedData(
+                record.Id,
+                record.StudentId,
+                record.Date,
+                record.Status,
+                record.Remarks,
+                record.RegisteredBy));
+        var outboxMessage = CreateOutboxMessage(
+            RoutingKeys.AttendanceRecorded,
+            envelope);
+
+        await SaveWithOutboxAsync(
+            record,
+            outboxMessage,
+            cancellationToken);
 
         return OperationResult<AttendanceRecordResponse>.Success(
             new AttendanceRecordResponse(
@@ -152,8 +178,26 @@ public sealed class AttendanceApplicationService(
             CreatedAt = timeProvider.GetUtcNow()
         };
 
-        dbContext.Incidents.Add(incident);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        var envelope = EventEnvelopeFactory.Create(
+            EventTypes.IncidentReported,
+            "AttendanceService",
+            incident.Id,
+            incident.CorrelationId,
+            new IncidentReportedData(
+                incident.Id,
+                incident.StudentId,
+                incident.Type,
+                incident.Severity,
+                incident.Description,
+                incident.ReportedBy));
+        var outboxMessage = CreateOutboxMessage(
+            RoutingKeys.IncidentReported,
+            envelope);
+
+        await SaveWithOutboxAsync(
+            incident,
+            outboxMessage,
+            cancellationToken);
 
         return OperationResult<IncidentResponse>.Success(
             ToIncidentResponse(incident));
@@ -410,4 +454,72 @@ public sealed class AttendanceApplicationService(
             incident.ReportedBy,
             incident.CorrelationId,
             incident.CreatedAt);
+
+    private async Task SaveWithOutboxAsync<TEntity>(
+        TEntity entity,
+        OutboxMessage outboxMessage,
+        CancellationToken cancellationToken)
+        where TEntity : class
+    {
+        IDbContextTransaction? transaction = null;
+
+        try
+        {
+            if (dbContext.Database.IsRelational())
+            {
+                transaction = await dbContext.Database
+                    .BeginTransactionAsync(cancellationToken);
+            }
+
+            dbContext.Set<TEntity>().Add(entity);
+            dbContext.OutboxMessages.Add(outboxMessage);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            logger.LogInformation(
+                "OutboxMessage created. EventId={EventId} " +
+                "EventType={EventType} RoutingKey={RoutingKey} " +
+                "CorrelationId={CorrelationId} ServiceName={ServiceName}",
+                outboxMessage.EventId,
+                outboxMessage.EventType,
+                outboxMessage.RoutingKey,
+                outboxMessage.CorrelationId,
+                "AttendanceService");
+        }
+        catch
+        {
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+
+            throw;
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
+    }
+
+    private OutboxMessage CreateOutboxMessage<TData>(
+        string routingKey,
+        EventEnvelope<TData> envelope) => new()
+    {
+        Id = Guid.NewGuid(),
+        EventId = envelope.EventId.ToString("D"),
+        EventType = envelope.EventType,
+        RoutingKey = routingKey,
+        CorrelationId = envelope.CorrelationId,
+        Payload = JsonSerializer.Serialize(envelope, JsonOptions),
+        OccurredAt = envelope.OccurredAt,
+        CreatedAt = timeProvider.GetUtcNow(),
+        Attempts = 0
+    };
 }

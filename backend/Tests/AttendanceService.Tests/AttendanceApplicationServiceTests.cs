@@ -4,6 +4,7 @@ using AttendanceService.Application.Validation;
 using AttendanceService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AttendanceService.Tests;
 
@@ -15,7 +16,8 @@ public sealed class AttendanceApplicationServiceTests
         await using var dbContext = CreateDbContext();
         var service = new AttendanceApplicationService(
             dbContext,
-            TimeProvider.System);
+            TimeProvider.System,
+            NullLogger<AttendanceApplicationService>.Instance);
 
         var result = await service.GetStudentsAsync(
             new StudentsQueryParameters(),
@@ -32,7 +34,8 @@ public sealed class AttendanceApplicationServiceTests
         await using var dbContext = CreateDbContext();
         var service = new AttendanceApplicationService(
             dbContext,
-            TimeProvider.System);
+            TimeProvider.System,
+            NullLogger<AttendanceApplicationService>.Instance);
 
         var result = await service.GetIncidentsAsync(
             new IncidentsQueryParameters(),
@@ -49,7 +52,8 @@ public sealed class AttendanceApplicationServiceTests
         await using var dbContext = CreateDbContext();
         var service = new AttendanceApplicationService(
             dbContext,
-            TimeProvider.System);
+            TimeProvider.System,
+            NullLogger<AttendanceApplicationService>.Instance);
 
         var result = await service.CreateRecordAsync(
             new CreateAttendanceRecordRequest(
@@ -72,7 +76,8 @@ public sealed class AttendanceApplicationServiceTests
         await using var dbContext = CreateDbContext();
         var service = new AttendanceApplicationService(
             dbContext,
-            TimeProvider.System);
+            TimeProvider.System,
+            NullLogger<AttendanceApplicationService>.Instance);
 
         var result = await service.GetStudentHistoryAsync(
             Guid.NewGuid(),
