@@ -12,6 +12,7 @@ public sealed class NotificationDbContext(
     public DbSet<NotificationAttempt> NotificationAttempts => Set<NotificationAttempt>();
     public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<FailedMessage> FailedMessages => Set<FailedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

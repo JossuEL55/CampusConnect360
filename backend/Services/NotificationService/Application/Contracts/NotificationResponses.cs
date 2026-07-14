@@ -44,8 +44,36 @@ public sealed record NotificationDetailResponse(
     string CorrelationId,
     DateTimeOffset CreatedAt,
     DateTimeOffset? SentAt,
+    DateTimeOffset? NextAttemptAt,
+    DateTimeOffset? LastAttemptAt,
     string? FailureReason,
-    IReadOnlyList<NotificationAttemptResponse> NotificationAttempts);
+    IReadOnlyList<NotificationAttemptResponse> NotificationAttempts,
+    FailedMessageResponse? Failure);
+
+public sealed class FailedMessageQueryParameters
+{
+    public string? Status { get; init; }
+    public string? SourceEventType { get; init; }
+    public int? Page { get; init; }
+    public int? PageSize { get; init; }
+}
+
+public sealed record FailedMessageResponse(
+    Guid FailedMessageId,
+    Guid NotificationId,
+    string SourceEventId,
+    string SourceEventType,
+    string CorrelationId,
+    int Attempts,
+    string FailureReason,
+    DateTimeOffset FailedAt,
+    string Status,
+    DateTimeOffset? RetriedAt,
+    DateTimeOffset? ResolvedAt);
+
+public sealed record FailureModeRequest(bool Enabled);
+public sealed record FailureModeResponse(bool Enabled, DateTimeOffset UpdatedAt);
+public sealed record NotificationRetryResponse(Guid NotificationId, string Status, DateTimeOffset NextAttemptAt);
 
 public sealed record PagedResponse<T>(
     IReadOnlyList<T> Items,

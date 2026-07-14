@@ -23,14 +23,26 @@ builder.Services.AddProblemDetails(options =>
 });
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<NotificationOptions>(
+    builder.Configuration.GetSection(NotificationOptions.SectionName));
+builder.Services.AddSingleton(new NotificationFailureMode(
+    builder.Configuration.GetValue<bool>("Notifications:FailureMode")));
+builder.Services.AddSingleton<NotificationProcessingCoordinator>();
 builder.Services.AddScoped<NotificationEventProcessor>();
+builder.Services.AddScoped<NotificationDeliveryProcessor>();
+builder.Services.AddScoped<NotificationRetryService>();
 builder.Services.AddScoped<NotificationQueryService>();
 builder.Services.AddScoped<OutboxProcessor>();
+builder.Services.AddScoped<DeadLetterProcessor>();
 builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
 builder.Services.AddSingleton<IOutboxMessagePublisher,
     RabbitMqOutboxMessagePublisher>();
+builder.Services.AddSingleton<IDeadLetterPublisher,
+    RabbitMqDeadLetterPublisher>();
 builder.Services.AddHostedService<NotificationInboxConsumer>();
+builder.Services.AddHostedService<NotificationDeliveryWorker>();
 builder.Services.AddHostedService<OutboxPublisherWorker>();
+builder.Services.AddHostedService<DeadLetterPublisherWorker>();
 
 var databaseSection = builder.Configuration.GetSection(DatabaseOptions.SectionName);
 builder.Services.AddOptions<DatabaseOptions>().Bind(databaseSection)

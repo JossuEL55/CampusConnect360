@@ -19,15 +19,19 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
         builder.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(300).IsRequired();
         builder.Property(x => x.Body).HasColumnName("body").HasMaxLength(4000).IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
-        builder.Property(x => x.Attempts).HasColumnName("attempts").HasDefaultValue(1).IsRequired();
+        builder.Property(x => x.Attempts).HasColumnName("attempts").HasDefaultValue(0).IsRequired();
         builder.Property(x => x.CorrelationId).HasColumnName("correlation_id").HasMaxLength(100).IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.SentAt).HasColumnName("sent_at");
+        builder.Property(x => x.NextAttemptAt).HasColumnName("next_attempt_at");
+        builder.Property(x => x.LastAttemptAt).HasColumnName("last_attempt_at");
         builder.Property(x => x.FailureReason).HasColumnName("failure_reason").HasMaxLength(2000);
+        builder.Property(x => x.SourcePayload).HasColumnName("source_payload").HasColumnType("jsonb").IsRequired();
         builder.HasOne(x => x.Student).WithMany(x => x.Notifications).HasForeignKey(x => x.StudentId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_notifications_students_student_id");
         builder.HasIndex(x => x.CreatedAt).HasDatabaseName("ix_notifications_created_at");
         builder.HasIndex(x => x.Status).HasDatabaseName("ix_notifications_status");
+        builder.HasIndex(x => new { x.Status, x.NextAttemptAt }).HasDatabaseName("ix_notifications_status_next_attempt_at");
         builder.HasIndex(x => x.SourceEventType).HasDatabaseName("ix_notifications_source_event_type");
         builder.HasIndex(x => x.StudentId).HasDatabaseName("ix_notifications_student_id");
     }

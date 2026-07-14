@@ -42,6 +42,23 @@ public sealed class OutboxAndQueryTests
     }
 
     [Fact]
+    public async Task NotificationFailedOutbox_IsMarkedProcessedOnlyAfterPublisherConfirmation()
+    {
+        await using var db = CreateDb();
+        var message = Message();
+        message.EventType = "NotificationFailed";
+        message.RoutingKey = "notifications.notification.failed";
+        db.OutboxMessages.Add(message);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var publisher = new FakePublisher();
+
+        Assert.True(await Processor(db, publisher)
+            .PublishPendingBatchAsync(TestContext.Current.CancellationToken));
+        Assert.NotNull(message.ProcessedAt);
+        Assert.Equal(1, publisher.Calls);
+    }
+
+    [Fact]
     public async Task GetMissingNotification_ReturnsNotFoundResult()
     {
         await using var db = CreateDb();

@@ -202,6 +202,7 @@ services:
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
       RabbitMq__VirtualHost: /
+      Notifications__FailureMode: "false"
       Seq__ServerUrl: http://seq:5341
     ports:
       - "5004:8080"

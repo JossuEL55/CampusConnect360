@@ -29,23 +29,18 @@ public sealed class NotificationEventProcessorTests
         Assert.Equal(NotificationProcessingOutcome.NotificationCreated, firstResult.Outcome);
         Assert.Equal(NotificationProcessingOutcome.NotificationCreated, secondResult.Outcome);
         Assert.Equal(2, db.Notifications.Count());
-        Assert.Equal(2, db.NotificationAttempts.Count());
-        Assert.Equal(2, db.OutboxMessages.Count());
+        Assert.Empty(db.NotificationAttempts);
+        Assert.Empty(db.OutboxMessages);
         Assert.Equal(2, db.ProcessedEvents.Count());
 
         var notification = db.Notifications.OrderBy(x => x.CreatedAt).First();
         Assert.Equal("Bienvenida: matrícula confirmada", notification.Subject);
-        var outbox = db.OutboxMessages.OrderBy(x => x.CreatedAt).First();
-        using var payload = JsonDocument.Parse(outbox.Payload);
-        var root = payload.RootElement;
-        Assert.Equal(EventTypes.NotificationSent, root.GetProperty("eventType").GetString());
-        var data = root.GetProperty("data");
-        Assert.Equal(notification.Id, data.GetProperty("notificationId").GetGuid());
-        Assert.Equal(first.EventId.ToString("D"), data.GetProperty("sourceEventId").GetString());
-        Assert.Equal(EventTypes.StudentEnrolled, data.GetProperty("sourceEventType").GetString());
-        Assert.Equal("Email", data.GetProperty("channel").GetString());
-        Assert.Equal("guardian@test.local", data.GetProperty("recipient").GetString());
-        Assert.Equal(1, data.GetProperty("attempts").GetInt32());
+        Assert.Equal("Pending", notification.Status);
+        Assert.Equal(0, notification.Attempts);
+        Assert.NotNull(notification.NextAttemptAt);
+        Assert.Null(notification.SentAt);
+        Assert.Equal(JsonValueKind.Object,
+            JsonDocument.Parse(notification.SourcePayload).RootElement.ValueKind);
     }
 
     [Fact]

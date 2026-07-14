@@ -6,7 +6,6 @@ using NotificationService.Application.Contracts;
 using NotificationService.Domain.Entities;
 using NotificationService.Infrastructure.Persistence;
 using SharedKernel.Events;
-using SharedKernel.Messaging;
 using NotificationEntity = NotificationService.Domain.Entities.Notification;
 
 namespace NotificationService.Application.Services;
@@ -18,7 +17,7 @@ public sealed class NotificationEventProcessor(
 {
     private const string ServiceName = "NotificationService";
     private const string Channel = "Email";
-    private const string SentStatus = "Sent";
+    private static readonly TimeSpan FirstAttemptDelay = TimeSpan.FromSeconds(5);
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web)
         {
@@ -297,56 +296,24 @@ public sealed class NotificationEventProcessor(
             Recipient = recipient,
             Subject = subject,
             Body = body,
-            Status = SentStatus,
-            Attempts = 1,
+            Status = "Pending",
+            Attempts = 0,
             CorrelationId = source.CorrelationId,
             CreatedAt = now,
-            SentAt = now
+            NextAttemptAt = now.Add(FirstAttemptDelay),
+            SourcePayload = JsonSerializer.Serialize(source, JsonOptions)
         };
-        var attempt = new NotificationAttempt
-        {
-            Id = Guid.NewGuid(),
-            NotificationId = notification.Id,
-            Notification = notification,
-            AttemptNumber = 1,
-            Status = SentStatus,
-            CreatedAt = now
-        };
-        notification.NotificationAttempts.Add(attempt);
         dbContext.Notifications.Add(notification);
 
-        var sentEnvelope = EventEnvelopeFactory.Create(
-            EventTypes.NotificationSent,
-            ServiceName,
-            notification.Id,
-            source.CorrelationId,
-            new NotificationSentData(
-                notification.Id,
-                notification.SourceEventId,
-                notification.SourceEventType,
-                notification.Channel,
-                notification.Recipient,
-                notification.Attempts));
-        dbContext.OutboxMessages.Add(new OutboxMessage
-        {
-            Id = Guid.NewGuid(),
-            EventId = sentEnvelope.EventId.ToString("D"),
-            EventType = sentEnvelope.EventType,
-            RoutingKey = RoutingKeys.NotificationSent,
-            CorrelationId = sentEnvelope.CorrelationId,
-            Payload = JsonSerializer.Serialize(sentEnvelope, JsonOptions),
-            OccurredAt = sentEnvelope.OccurredAt,
-            CreatedAt = now
-        });
-
         logger.LogInformation(
-            "Simulated email notification created. NotificationId={NotificationId} " +
+            "Pending notification persisted. NotificationId={NotificationId} " +
             "EventId={EventId} EventType={EventType} StudentId={StudentId} " +
-            "CorrelationId={CorrelationId} ServiceName={ServiceName}",
+            "NextAttemptAt={NextAttemptAt} CorrelationId={CorrelationId} ServiceName={ServiceName}",
             notification.Id,
             source.EventId,
             source.EventType,
             studentId,
+            notification.NextAttemptAt,
             source.CorrelationId,
             ServiceName);
         return new(NotificationProcessingOutcome.NotificationCreated, notification.Id);
