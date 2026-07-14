@@ -41,11 +41,11 @@ export function TeacherPortal() {
                 <tbody>
                   {students.data.map((student) => (
                     <tr
-                      key={student.studentId}
+                      key={student.id}
                       className="selectable"
-                      onClick={() => setSelectedId(student.studentId)}
+                      onClick={() => setSelectedId(student.id)}
                     >
-                      <td>{student.fullName ?? student.studentCode ?? student.studentId}</td>
+                      <td>{student.fullName ?? student.studentCode ?? student.id}</td>
                       <td>{student.grade ?? '—'}</td>
                     </tr>
                   ))}

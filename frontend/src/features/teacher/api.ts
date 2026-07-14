@@ -3,8 +3,9 @@ import { apiClient } from '../../shared/api/client'
 import { asItems } from '../../shared/api/paging'
 import type { Paged } from '../../shared/api/paging'
 
+// La réplica local identifica al estudiante con "id" (no "studentId").
 export interface TeacherStudent {
-  studentId: string
+  id: string
   fullName?: string
   studentCode?: string
   grade?: string
