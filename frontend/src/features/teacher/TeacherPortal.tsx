@@ -8,7 +8,9 @@ import { useRecordAttendance, useReportIncident, useStudentHistory, useTeacherSt
 const today = () => new Date().toISOString().slice(0, 10)
 
 export function TeacherPortal() {
-  const students = useTeacherStudents()
+  const [q, setQ] = useState('')
+  const [grade, setGrade] = useState('')
+  const students = useTeacherStudents(q, grade)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   return (
@@ -17,6 +19,14 @@ export function TeacherPortal() {
       <div className="split">
         <section className="card">
           <h2>Estudiantes</h2>
+          <div className="form-grid">
+            <Field label="Buscar">
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre o código" />
+            </Field>
+            <Field label="Grado">
+              <input value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="8vo EGB" />
+            </Field>
+          </div>
           {students.isPending && <Loading />}
           {students.isError && <ErrorState error={students.error} onRetry={() => students.refetch()} />}
           {students.data && students.data.length === 0 && (

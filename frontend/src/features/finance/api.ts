@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../shared/api/client'
-import type { Paged } from '../academic/api'
+import { asItems } from '../../shared/api/paging'
+import type { Paged } from '../../shared/api/paging'
 
 export interface DebtorStudent {
   studentId: string
@@ -41,11 +42,6 @@ export interface ConfirmPaymentInput {
   paymentMethod: string
   reference: string
   paidAmount: number
-}
-
-// El servicio puede responder lista simple o paginada; se normaliza a lista.
-function asItems<T>(data: T[] | Paged<T>): T[] {
-  return Array.isArray(data) ? data : data.items
 }
 
 const keys = { all: ['finance'] as const }

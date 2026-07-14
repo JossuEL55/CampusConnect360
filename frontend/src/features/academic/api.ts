@@ -1,12 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../shared/api/client'
-
-export interface Paged<T> {
-  items: T[]
-  page: number
-  pageSize: number
-  totalCount: number
-}
+import type { Paged } from '../../shared/api/paging'
 
 export interface Guardian {
   fullName: string

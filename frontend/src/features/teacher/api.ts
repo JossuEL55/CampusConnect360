@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../shared/api/client'
-import type { Paged } from '../academic/api'
+import { asItems } from '../../shared/api/paging'
+import type { Paged } from '../../shared/api/paging'
 
 export interface TeacherStudent {
   studentId: string
@@ -34,17 +35,20 @@ export interface HistoryEntry {
   description?: string
 }
 
-function asItems<T>(data: T[] | Paged<T>): T[] {
-  return Array.isArray(data) ? data : data.items
-}
-
 const keys = { all: ['teacher'] as const }
 
-export function useTeacherStudents() {
+export function useTeacherStudents(q: string, grade: string) {
   return useQuery({
-    queryKey: ['teacher', 'students'],
+    queryKey: ['teacher', 'students', q, grade],
     queryFn: async () =>
-      asItems((await apiClient.get<TeacherStudent[] | Paged<TeacherStudent>>('/api/attendance/students')).data),
+      asItems(
+        (
+          await apiClient.get<TeacherStudent[] | Paged<TeacherStudent>>('/api/attendance/students', {
+            params: { q: q || undefined, grade: grade || undefined },
+          })
+        ).data,
+      ),
+    placeholderData: (previous) => previous,
   })
 }
 

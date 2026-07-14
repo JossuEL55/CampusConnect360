@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Badge, EmptyState, ErrorState, Field, Loading, Stat, statusTone } from '../../shared/ui/bits'
-import { useDashboard, useEcosystemStatus, useEventLog, useFailures, useTrace } from './api'
+import { useDashboard, useEcosystemStatus, useEventLog, useFailures, useNotifications, useTrace } from './api'
 import type { EventFilters } from './api'
 
 const money = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' })
 
-type Tab = 'eventos' | 'traza' | 'fallos' | 'ecosistema'
+type Tab = 'eventos' | 'traza' | 'fallos' | 'notificaciones' | 'ecosistema'
 
 export function DirectorDashboard() {
   const dashboard = useDashboard()
@@ -60,6 +60,7 @@ export function DirectorDashboard() {
               ['eventos', 'Bitácora de eventos'],
               ['traza', 'Traza por correlación'],
               ['fallos', 'Fallos'],
+              ['notificaciones', 'Notificaciones'],
               ['ecosistema', 'Estado del ecosistema'],
             ] as [Tab, string][]
           ).map(([id, label]) => (
@@ -71,6 +72,7 @@ export function DirectorDashboard() {
         {tab === 'eventos' && <EventLogTab />}
         {tab === 'traza' && <TraceTab />}
         {tab === 'fallos' && <FailuresTab />}
+        {tab === 'notificaciones' && <NotificationsTab />}
         {tab === 'ecosistema' && <EcosystemTab />}
       </section>
     </>
@@ -274,6 +276,52 @@ function EcosystemTab() {
             </table>
           </div>
         </>
+      )}
+    </>
+  )
+}
+
+function NotificationsTab() {
+  const [status, setStatus] = useState('')
+  const notifications = useNotifications(status)
+
+  return (
+    <>
+      <div className="form-grid">
+        <Field label="Estado">
+          <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="">Todas</option>
+            <option value="Sent">Enviadas</option>
+            <option value="Failed">Fallidas</option>
+            <option value="Pending">Pendientes</option>
+          </select>
+        </Field>
+      </div>
+      {notifications.isPending && <Loading />}
+      {notifications.isError && <ErrorState error={notifications.error} onRetry={() => notifications.refetch()} />}
+      {notifications.data && notifications.data.length === 0 && (
+        <EmptyState message="Sin notificaciones registradas." />
+      )}
+      {notifications.data && notifications.data.length > 0 && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Evento origen</th><th>Canal</th><th>Destinatario</th><th>Estado</th><th>Intentos</th><th>Fecha</th></tr>
+            </thead>
+            <tbody>
+              {notifications.data.map((notification) => (
+                <tr key={notification.notificationId}>
+                  <td>{notification.sourceEventType ?? '—'}</td>
+                  <td>{notification.channel ?? '—'}</td>
+                  <td>{notification.recipient ?? '—'}</td>
+                  <td><Badge tone={statusTone(notification.status ?? '')}>{notification.status ?? '—'}</Badge></td>
+                  <td>{notification.attempts ?? '—'}</td>
+                  <td>{notification.sentAt ? new Date(notification.sentAt).toLocaleString() : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )

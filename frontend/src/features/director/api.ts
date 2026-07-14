@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../shared/api/client'
-import type { Paged } from '../academic/api'
+import { asItems } from '../../shared/api/paging'
+import type { Paged } from '../../shared/api/paging'
 
 export interface Dashboard {
   generatedAt: string
@@ -111,5 +112,32 @@ export function useEcosystemStatus() {
     queryFn: async () =>
       (await apiClient.get<EcosystemStatus>('/api/analytics/ecosystem-status')).data,
     refetchInterval: 15_000,
+  })
+}
+
+export interface NotificationItem {
+  notificationId: string
+  sourceEventType?: string
+  channel?: string
+  recipient?: string
+  subject?: string
+  status?: string
+  attempts?: number
+  sentAt?: string
+  createdAt?: string
+}
+
+export function useNotifications(status: string) {
+  return useQuery({
+    queryKey: ['director', 'notifications', status],
+    queryFn: async () =>
+      asItems(
+        (
+          await apiClient.get<NotificationItem[] | Paged<NotificationItem>>('/api/notifications', {
+            params: { status: status || undefined },
+          })
+        ).data,
+      ),
+    placeholderData: (previous) => previous,
   })
 }
