@@ -113,7 +113,7 @@ h3 { font-size: 0.95rem; }
 
 .topbar nav a:hover {
   color: #fff;
-  background: rgb(255 255 255 / 0.08);
+  background: rgb(0 0 0 / 0.15);
 }
 
 .topbar nav a.active {
@@ -440,7 +440,10 @@ tr.selectable { cursor: pointer; }
   display: grid;
   grid-template-rows: 1fr auto;
   place-items: center;
-  background: linear-gradient(160deg, #faf9f9 0%, #f3eef0 55%, #ecdfe3 100%);
+  background:
+    radial-gradient(640px 420px at 85% 15%, rgb(255 255 255 / 0.1), transparent 60%),
+    radial-gradient(720px 520px at 8% 92%, rgb(0 0 0 / 0.22), transparent 65%),
+    linear-gradient(150deg, #d51039 0%, var(--brand) 45%, #6f001b 100%);
   padding: 1.5rem;
 }
 
