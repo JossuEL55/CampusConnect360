@@ -1,9 +1,0 @@
-**/bin/
-**/obj/
-.git/
-.gitignore
-.env
-.vs/
-.vscode/
-docs/
-frontend/node_modules/
