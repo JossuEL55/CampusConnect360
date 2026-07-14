@@ -1,1 +1,320 @@
-services: {}
+# Docker Compose para levantar toda la aplicación de CampusConnect360, 
+#incluyendo servicios de backend, base de datos, RabbitMQ y Seq para logging.
+name: campusconnect360
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: campusconnect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-schemas.sql:/docker-entrypoint-initdb.d/01-init-schemas.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - campus-network
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: campusconnect-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infrastructure/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - -q
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - campus-network
+
+  rabbitmq-init:
+    image: rabbitmq:4-management-alpine
+    container_name: campusconnect-rabbitmq-init
+    restart: "no"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ./infrastructure/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - >-
+        rabbitmqadmin --host rabbitmq --port 15672
+        --username "$${RABBITMQ_DEFAULT_USER}"
+        --password "$${RABBITMQ_DEFAULT_PASS}"
+        definitions import --file /etc/rabbitmq/definitions.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - campus-network
+
+  seq:
+    image: datalust/seq:latest
+    container_name: campusconnect-seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_ADMIN_USERNAME}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD}
+    ports:
+      - "${SEQ_PORT}:80"
+      - "${SEQ_INGESTION_PORT}:5341"
+    volumes:
+      - seq_data:/data
+    networks:
+      - campus-network
+
+  academic-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AcademicService/Dockerfile
+    image: campusconnect-academic:local
+    container_name: campusconnect-academic
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+      Database__Schema: academic
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: /
+    ports:
+      - "5001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: backend/Services/PaymentService/Dockerfile
+    image: campusconnect-payment:local
+    container_name: campusconnect-payment
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5002:8080"
+    depends_on:
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  attendance-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AttendanceService/Dockerfile
+    image: campusconnect-attendance:local
+    container_name: campusconnect-attendance
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+      Database__Schema: attendance
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: /
+    ports:
+      - "5003:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: backend/Services/NotificationService/Dockerfile
+    image: campusconnect-notification:local
+    container_name: campusconnect-notification
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+      Database__Schema: notifications
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: /
+      Notifications__FailureMode: "false"
+      Seq__ServerUrl: http://seq:5341
+    ports:
+      - "5004:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AnalyticsService/Dockerfile
+    image: campusconnect-analytics:local
+    container_name: campusconnect-analytics
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__ServerUrl: http://seq:5341
+
+      Database__Host: postgres
+      Database__Name: ${POSTGRES_DB}
+      Database__UserName: ${POSTGRES_USER}
+      Database__Password: ${POSTGRES_PASSWORD}
+
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+
+      RabbitMqApi__BaseUrl: http://rabbitmq:15672
+      RabbitMqApi__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMqApi__Password: ${RABBITMQ_DEFAULT_PASS}
+
+      HealthServices__AcademicService: http://academic-service:8080/api/academic/health
+      HealthServices__PaymentService: http://payment-service:8080/api/payments/health
+      HealthServices__AttendanceService: http://attendance-service:8080/api/attendance/health
+      HealthServices__NotificationService: http://notification-service:8080/api/notifications/health
+      HealthServices__AnalyticsService: http://localhost:8080/api/analytics/health
+    ports:
+      - "5005:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Gateway/Dockerfile
+    image: campusconnect-gateway:local
+    container_name: campusconnect-gateway
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+
+      Jwt__Secret: ${JWT_SECRET}
+      Auth__DemoPassword: ${AUTH_DEMO_PASSWORD}
+
+      Seq__ServerUrl: http://seq:5341
+
+      HealthServices__AcademicService: http://academic-service:8080/api/academic/health
+      HealthServices__PaymentService: http://payment-service:8080/api/payments/health
+      HealthServices__AttendanceService: http://attendance-service:8080/api/attendance/health
+      HealthServices__NotificationService: http://notification-service:8080/api/notifications/health
+      HealthServices__AnalyticsService: http://analytics-service:8080/api/analytics/health
+
+      ReverseProxy__Clusters__academic-cluster__Destinations__academic-destination__Address: http://academic-service:8080
+      ReverseProxy__Clusters__payments-cluster__Destinations__payments-destination__Address: http://payment-service:8080
+      ReverseProxy__Clusters__attendance-cluster__Destinations__attendance-destination__Address: http://attendance-service:8080
+      ReverseProxy__Clusters__notifications-cluster__Destinations__notifications-destination__Address: http://notification-service:8080
+      ReverseProxy__Clusters__analytics-cluster__Destinations__analytics-destination__Address: http://analytics-service:8080
+
+    ports:
+      - "8088:8080"
+    depends_on:
+      academic-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      attendance-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+      seq:
+        condition: service_started
+    networks:
+      - campus-network
+
+networks:
+  campus-network:
+    name: campusconnect-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: campusconnect-postgres-data
+
+  rabbitmq_data:
+    name: campusconnect-rabbitmq-data
+
+  seq_data:
+    name: campusconnect-seq-data

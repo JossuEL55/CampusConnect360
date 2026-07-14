@@ -1,0 +1,143 @@
+{
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "campus.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "campus.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "payments.student-enrolled",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "attendance.student-enrolled",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "academic.payment-confirmed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "campus.dlx",
+        "x-dead-letter-routing-key": "notifications.dead-letter"
+      }
+    },
+    {
+      "name": "notifications.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "campus.dlx",
+        "x-dead-letter-routing-key": "notifications.dead-letter"
+      }
+    },
+    {
+      "name": "analytics.all-events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "notifications.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "payments.student-enrolled",
+      "destination_type": "queue",
+      "routing_key": "academic.student.enrolled",
+      "arguments": {}
+    },
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "attendance.student-enrolled",
+      "destination_type": "queue",
+      "routing_key": "academic.student.enrolled",
+      "arguments": {}
+    },
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "academic.payment-confirmed",
+      "destination_type": "queue",
+      "routing_key": "payments.payment.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "notifications.inbox",
+      "destination_type": "queue",
+      "routing_key": "academic.student.enrolled",
+      "arguments": {}
+    },
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "notifications.inbox",
+      "destination_type": "queue",
+      "routing_key": "payments.payment.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "notifications.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.#",
+      "arguments": {}
+    },
+    {
+      "source": "campus.events",
+      "vhost": "/",
+      "destination": "analytics.all-events",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "campus.dlx",
+      "vhost": "/",
+      "destination": "notifications.dlq",
+      "destination_type": "queue",
+      "routing_key": "notifications.dead-letter",
+      "arguments": {}
+    }
+  ]
+}
