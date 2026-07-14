@@ -125,10 +125,17 @@ services:
       Database__UserName: ${POSTGRES_USER}
       Database__Password: ${POSTGRES_PASSWORD}
       Database__Schema: attendance
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: /
     ports:
       - "5003:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       seq:
         condition: service_started

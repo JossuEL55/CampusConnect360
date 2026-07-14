@@ -6,6 +6,7 @@ using AttendanceService.Endpoints;
 using AttendanceService.Infrastructure.Development;
 using AttendanceService.Infrastructure.Errors;
 using AttendanceService.Infrastructure.Persistence;
+using AttendanceService.Infrastructure.Messaging;
 using SharedKernel.Configuration;
 using SharedKernel.Observability;
 
@@ -30,8 +31,12 @@ builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IAttendanceApplicationService,
     AttendanceApplicationService>();
+builder.Services.AddScoped<IStudentEnrollmentProjectionService,
+    StudentEnrollmentProjectionService>();
 builder.Services.AddScoped<DevelopmentDataSeeder>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IRabbitMqConnection, RabbitMqConnection>();
+builder.Services.AddHostedService<StudentEnrolledConsumer>();
 
 var databaseSection = builder.Configuration.GetSection(
     DatabaseOptions.SectionName);
@@ -66,6 +71,22 @@ builder.Services.AddDbContext<AttendanceDbContext>(options =>
                 DatabaseSchemas.Attendance);
         }));
 
+var rabbitMqSection = builder.Configuration.GetSection(
+    RabbitMqOptions.SectionName);
+
+builder.Services
+    .AddOptions<RabbitMqOptions>()
+    .Bind(rabbitMqSection)
+    .Validate(
+        options =>
+            !string.IsNullOrWhiteSpace(options.HostName) &&
+            options.Port is > 0 and <= 65535 &&
+            !string.IsNullOrWhiteSpace(options.UserName) &&
+            !string.IsNullOrWhiteSpace(options.Password) &&
+            !string.IsNullOrWhiteSpace(options.VirtualHost),
+        "RabbitMq configuration must be complete.")
+    .ValidateOnStart();
+
 builder.Services
     .AddHealthChecks()
     .AddCheck(
@@ -79,6 +100,13 @@ builder.Services
         "postgresql",
         failureStatus: HealthStatus.Unhealthy,
         tags: ["database", "postgresql"]);
+
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<RabbitMqHealthCheck>(
+        "rabbitmq",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: ["messaging", "rabbitmq"]);
 
 var app = builder.Build();
 app.UseExceptionHandler();
