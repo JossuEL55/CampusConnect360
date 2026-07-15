@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Badge, EmptyState, ErrorState, Field, Loading, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
 import {
   useCreateEnrollment,
@@ -40,9 +40,11 @@ export function AcademicPortal() {
 
   return (
     <>
-      <h1>Portal Académico</h1>
+      <PageHead kicker="Portal académico" title="Estudiantes y matrículas">
+        Registra estudiantes, confirma matrículas y consulta la ficha con su estado académico y financiero.
+      </PageHead>
       <div className="split">
-        <section className="card">
+        <section className="card" id="estudiantes">
           <div className="section-head">
             <h2>Estudiantes</h2>
             <button type="button" className="btn" onClick={() => setShowForm((v) => !v)}>
@@ -117,7 +119,7 @@ export function AcademicPortal() {
         {selectedId ? (
           <StudentDetail studentId={selectedId} />
         ) : (
-          <section className="card">
+          <section className="card" id="ficha">
             <h2>Ficha del estudiante</h2>
             <EmptyState message="Selecciona un estudiante de la lista para ver su ficha, matrículas y eventos." />
           </section>
@@ -230,7 +232,7 @@ function StudentDetail({ studentId }: { studentId: string }) {
 
   const data = student.data
   return (
-    <section className="card">
+    <section className="card" id="ficha">
       <div className="section-head">
         <h2>{data.firstName} {data.lastName}</h2>
         <div>

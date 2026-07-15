@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Badge, EmptyState, ErrorState, Field, Loading, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
 import {
   useConfirmPayment,
@@ -16,14 +16,16 @@ const money = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD
 export function FinancePortal() {
   return (
     <>
-      <h1>Portal Financiero</h1>
+      <PageHead kicker="Portal financiero" title="Deudas y confirmación de pagos">
+        Registra obligaciones de pago, confirma transacciones y consulta el estado de deudas y pagos de la red.
+      </PageHead>
       <div className="split">
-        <div style={{ display: 'grid', gap: '1.25rem' }}>
+        <div id="deudas" style={{ display: 'grid', gap: '1rem' }}>
           <CreateDebtSection />
-          <DebtorStudentsSection />
-        </div>
-        <div style={{ display: 'grid', gap: '1.25rem' }}>
           <PendingDebtsSection />
+        </div>
+        <div id="estudiantes" style={{ display: 'grid', gap: '1rem' }}>
+          <DebtorStudentsSection />
           <ConfirmedPaymentsSection />
         </div>
       </div>
