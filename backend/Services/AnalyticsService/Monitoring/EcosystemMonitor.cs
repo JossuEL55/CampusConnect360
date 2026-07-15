@@ -49,8 +49,7 @@ public sealed class EcosystemMonitor(
         return new EcosystemSnapshot(status, brokerUp, dlqDepth, services);
     }
 
-    // Reglas del contrato (9.2): Healthy = todo OK y DLQ vacía; Degraded = un health
-    // fallido o mensajes en DLQ; Down = broker caído o más de un servicio caído.
+    // Contrato 9.2: Down = broker caído o más de un servicio; Degraded = un fallo o DLQ > 0.
     public static string ComputeStatus(bool brokerUp, int unhealthyServices, int dlqDepth) =>
         !brokerUp || unhealthyServices > 1 ? "Down"
         : unhealthyServices == 1 || dlqDepth > 0 ? "Degraded"

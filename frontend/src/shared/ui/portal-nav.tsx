@@ -25,8 +25,7 @@ export interface PortalDef {
   sections: PortalSection[]
 }
 
-// Cada portal declara sus secciones internas; la sidebar contextual las lista
-// para el portal activo (no lista los portales, esos van en la topbar).
+// La sidebar contextual lista las secciones del portal activo; los portales van en la topbar.
 export const PORTALS: PortalDef[] = [
   {
     path: '/academico',

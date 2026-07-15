@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 
-// La sidebar contextual y cada portal comparten la sección activa mediante el hash
-// de la URL (#estudiantes, #deudas, …). Al hacer clic en la sidebar cambia el hash
-// y el portal muestra solo esa sección.
+// Sección activa compartida vía hash de la URL: la sidebar lo cambia y el portal la muestra.
 export function useSection(ids: readonly string[]): [string, (id: string) => void] {
   const read = () => {
     const current = window.location.hash.replace('#', '')
