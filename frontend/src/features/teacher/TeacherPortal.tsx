@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '../../shared/auth/auth-context'
-import { Badge, EmptyState, ErrorState, Field, Loading, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
 import { useRecordAttendance, useReportIncident, useStudentHistory, useTeacherStudents } from './api'
 
@@ -15,9 +15,11 @@ export function TeacherPortal() {
 
   return (
     <>
-      <h1>Portal Docente / Bienestar</h1>
+      <PageHead kicker="Portal docente / bienestar" title="Mis estudiantes">
+        Consulta a tus estudiantes, registra asistencia e incidentes de bienestar y revisa su historial.
+      </PageHead>
       <div className="split">
-        <section className="card">
+        <section className="card" id="estudiantes">
           <h2>Estudiantes</h2>
           <div className="form-grid">
             <Field label="Buscar">
@@ -57,9 +59,9 @@ export function TeacherPortal() {
           {selectedId && <StudentHistory studentId={selectedId} />}
         </section>
 
-        <div style={{ display: 'grid', gap: '1.25rem' }}>
-          <AttendanceForm studentId={selectedId} />
-          <IncidentForm studentId={selectedId} />
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          <div id="asistencia"><AttendanceForm studentId={selectedId} /></div>
+          <div id="incidentes"><IncidentForm studentId={selectedId} /></div>
         </div>
       </div>
     </>
