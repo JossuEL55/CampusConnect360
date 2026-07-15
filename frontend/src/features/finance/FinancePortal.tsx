@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
+import { useSection } from '../../shared/ui/use-section'
 import {
   useConfirmPayment,
   useConfirmedPayments,
@@ -14,21 +15,27 @@ import type { Debt } from './api'
 const money = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' })
 
 export function FinancePortal() {
+  const [section] = useSection(['deudas', 'estudiantes'])
+
   return (
     <>
-      <PageHead kicker="Portal financiero" title="Deudas y confirmación de pagos">
-        Registra obligaciones de pago, confirma transacciones y consulta el estado de deudas y pagos de la red.
+      <PageHead
+        kicker="Portal financiero"
+        title={section === 'estudiantes' ? 'Estudiantes matriculados' : 'Deudas y confirmación de pagos'}
+      >
+        {section === 'estudiantes'
+          ? 'Consulta los estudiantes matriculados y su resumen de deuda.'
+          : 'Registra obligaciones de pago, confirma transacciones y consulta pagos confirmados.'}
       </PageHead>
-      <div className="split">
-        <div id="deudas" style={{ display: 'grid', gap: '1rem' }}>
+
+      {section === 'deudas' && (
+        <div className="feature-grid">
           <CreateDebtSection />
           <PendingDebtsSection />
-        </div>
-        <div id="estudiantes" style={{ display: 'grid', gap: '1rem' }}>
-          <DebtorStudentsSection />
           <ConfirmedPaymentsSection />
         </div>
-      </div>
+      )}
+      {section === 'estudiantes' && <DebtorStudentsSection />}
     </>
   )
 }

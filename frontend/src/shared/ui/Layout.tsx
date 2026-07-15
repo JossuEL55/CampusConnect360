@@ -4,6 +4,7 @@ import { useAuth } from '../auth/auth-context'
 import { canAccess } from '../auth/roles'
 import { LogOutIcon, Wordmark } from './icons'
 import { PORTALS, portalFor } from './portal-nav'
+import { useSection } from './use-section'
 
 function initials(fullName?: string): string {
   if (!fullName) return '?'
@@ -15,6 +16,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
   const portal = portalFor(pathname)
+  const [activeSection, goSection] = useSection(portal?.sections.map((s) => s.id) ?? [''])
 
   return (
     <div className="shell">
@@ -53,11 +55,16 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="shell-body">
         <nav className="subnav" aria-label={portal ? `Secciones de ${portal.label}` : 'Secciones'}>
           {portal && <div className="subnav-label">{portal.title}</div>}
-          {portal?.sections.map((section, index) => (
-            <a key={section.id} href={`#${section.id}`} className={index === 0 ? 'active' : undefined}>
+          {portal?.sections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              className={activeSection === section.id ? 'active' : undefined}
+              onClick={() => goSection(section.id)}
+            >
               {section.icon}
               {section.label}
-            </a>
+            </button>
           ))}
         </nav>
         <main className="content">{children}</main>

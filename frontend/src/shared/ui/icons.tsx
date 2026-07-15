@@ -127,3 +127,21 @@ export function BellIcon(props: IconProps) {
     </Svg>
   )
 }
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" />
+      <circle cx="10" cy="10" r="2.4" />
+    </Svg>
+  )
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M2 10s3-5.5 8-5.5c1.6 0 3 .5 4.2 1.2M18 10s-3 5.5-8 5.5c-1.6 0-3-.5-4.2-1.2" />
+      <path d="M3.5 16.5l13-13" />
+    </Svg>
+  )
+}

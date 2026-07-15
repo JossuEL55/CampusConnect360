@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/auth/auth-context'
 import { homeFor } from '../../shared/auth/roles'
 import { useToast } from '../../shared/ui/toast'
-import { Wordmark } from '../../shared/ui/icons'
+import { EyeIcon, EyeOffIcon, Wordmark } from '../../shared/ui/icons'
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -12,6 +12,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setSubmitting] = useState(false)
 
   if (user) return <Navigate to={homeFor(user.role)} replace />
@@ -45,11 +46,6 @@ export function LoginPage() {
             Información confiable para tomar mejores decisiones cada día.
           </p>
         </div>
-        <div className="brand-foot">
-          <div><b>4</b>colegios en red</div>
-          <div><b>1.248</b>estudiantes</div>
-          <div><b>99,9 %</b>disponibilidad</div>
-        </div>
       </aside>
 
       <div className="form-side">
@@ -77,16 +73,27 @@ export function LoginPage() {
             </div>
             <div className="field">
               <label htmlFor="login-pass">Contraseña</label>
-              <input
-                id="login-pass"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                required
-                disabled={isSubmitting}
-              />
+              <div className="input-affix">
+                <input
+                  id="login-pass"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  required
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  className="affix-btn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn btn-block" disabled={isSubmitting}>
               {isSubmitting ? 'Conectando…' : 'Entrar'}
