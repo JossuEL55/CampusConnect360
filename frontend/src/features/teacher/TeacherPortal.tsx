@@ -5,6 +5,7 @@ import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } f
 import { useToast } from '../../shared/ui/toast'
 import { useSection } from '../../shared/ui/use-section'
 import { useRecordAttendance, useReportIncident, useStudentHistory, useTeacherStudents } from './api'
+import type { TeacherStudent } from './api'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -64,13 +65,43 @@ export function TeacherPortal() {
         </section>
       )}
 
-      {section === 'asistencia' && <AttendanceForm studentId={selectedId} />}
-      {section === 'incidentes' && <IncidentForm studentId={selectedId} />}
+      {section === 'asistencia' && (
+        <AttendanceForm studentId={selectedId} students={students.data ?? []} />
+      )}
+      {section === 'incidentes' && (
+        <IncidentForm studentId={selectedId} students={students.data ?? []} />
+      )}
     </>
   )
 }
 
-function AttendanceForm({ studentId }: { studentId: string | null }) {
+function StudentSelect({
+  value,
+  onChange,
+  students,
+}: {
+  value: string
+  onChange: (id: string) => void
+  students: TeacherStudent[]
+}) {
+  return (
+    <Field label="Estudiante">
+      <select value={value} onChange={(e) => onChange(e.target.value)} required>
+        <option value="" disabled>
+          {students.length === 0 ? 'Sin estudiantes en la réplica' : 'Selecciona un estudiante…'}
+        </option>
+        {students.map((student) => (
+          <option key={student.id} value={student.id}>
+            {student.fullName ?? student.studentCode ?? student.id}
+            {student.grade ? ` · ${student.grade}` : ''}
+          </option>
+        ))}
+      </select>
+    </Field>
+  )
+}
+
+function AttendanceForm({ studentId, students }: { studentId: string | null; students: TeacherStudent[] }) {
   const { notify, notifyError } = useToast()
   const record = useRecordAttendance()
   const [form, setForm] = useState({ studentId: '', date: today(), status: 'Present', remarks: '' })
@@ -96,14 +127,11 @@ function AttendanceForm({ studentId }: { studentId: string | null }) {
     <section className="card">
       <h2>Registrar asistencia</h2>
       <form onSubmit={onSubmit} className="form-grid">
-        <Field label="ID del estudiante">
-          <input
-            value={effectiveStudentId}
-            onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-            required
-            placeholder="Selecciona de la lista o pega el UUID"
-          />
-        </Field>
+        <StudentSelect
+          value={effectiveStudentId}
+          onChange={(id) => setForm({ ...form, studentId: id })}
+          students={students}
+        />
         <Field label="Fecha">
           <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
         </Field>
@@ -126,7 +154,7 @@ function AttendanceForm({ studentId }: { studentId: string | null }) {
   )
 }
 
-function IncidentForm({ studentId }: { studentId: string | null }) {
+function IncidentForm({ studentId, students }: { studentId: string | null; students: TeacherStudent[] }) {
   const { user } = useAuth()
   const { notify, notifyError } = useToast()
   const report = useReportIncident()
@@ -154,13 +182,11 @@ function IncidentForm({ studentId }: { studentId: string | null }) {
     <section className="card">
       <h2>Reportar incidente</h2>
       <form onSubmit={onSubmit} className="form-grid">
-        <Field label="ID del estudiante">
-          <input
-            value={effectiveStudentId}
-            onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-            required
-          />
-        </Field>
+        <StudentSelect
+          value={effectiveStudentId}
+          onChange={(id) => setForm({ ...form, studentId: id })}
+          students={students}
+        />
         <Field label="Tipo">
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
             <option value="Academic">Académico</option>

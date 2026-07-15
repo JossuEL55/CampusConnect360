@@ -15,6 +15,7 @@ export interface DebtorStudent {
 export interface Debt {
   debtId: string
   studentId: string
+  studentFullName?: string
   concept: string
   amount: number
   dueDate: string
@@ -27,6 +28,8 @@ export interface Payment {
   studentId: string
   amount: number
   status: string
+  paymentMethod?: string
+  reference?: string
   confirmedAt: string
 }
 
