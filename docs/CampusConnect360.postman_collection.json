@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "CampusConnect 360",
+    "description": "Coleccion de respaldo tecnico. Ejecutar primero 'Auth / Login' para capturar el token; el resto de peticiones lo usan automaticamente. Variables: baseUrl (gateway) y password.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8088" },
+    { "key": "password", "value": "Demo2026*" },
+    { "key": "token", "value": "" },
+    { "key": "studentId", "value": "" },
+    { "key": "debtId", "value": "" },
+    { "key": "correlationId", "value": "corr-postman-001" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('token', pm.response.json().accessToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Identidad actual",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Academico",
+      "item": [
+        {
+          "name": "Registrar estudiante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('studentId', pm.response.json().studentId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+            ],
+            "url": "{{baseUrl}}/api/academic/students",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identification\": \"1799990001\",\n  \"firstName\": \"Ana\",\n  \"lastName\": \"Torres\",\n  \"birthDate\": \"2013-04-22\",\n  \"grade\": \"8vo EGB\",\n  \"schoolId\": \"SCH-001\",\n  \"guardian\": {\n    \"fullName\": \"Maria Torres\",\n    \"email\": \"maria.torres@mail.com\",\n    \"phone\": \"+593991112233\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar estudiantes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/academic/students?page=1&pageSize=20" }
+        },
+        {
+          "name": "Crear matricula (publica StudentEnrolled)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+            ],
+            "url": "{{baseUrl}}/api/academic/enrollments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"schoolYear\": \"2026-2027\",\n  \"grade\": \"8vo EGB\",\n  \"schoolId\": \"SCH-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eventos del estudiante",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/academic/students/{{studentId}}/events" }
+        }
+      ]
+    },
+    {
+      "name": "Pagos",
+      "item": [
+        {
+          "name": "Estudiantes con deuda",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/payments/students" }
+        },
+        {
+          "name": "Registrar deuda",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('debtId', pm.response.json().debtId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/debts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"concept\": \"Matricula 2026-2027\",\n  \"amount\": 350.00,\n  \"dueDate\": \"2026-08-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Confirmar pago (publica PaymentConfirmed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/debts/{{debtId}}/confirm",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": \"Transferencia\",\n  \"reference\": \"BCO-778812\",\n  \"paidAmount\": 350.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Pagos confirmados",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/payments?status=Confirmed" }
+        }
+      ]
+    },
+    {
+      "name": "Asistencia",
+      "item": [
+        {
+          "name": "Estudiantes (replica local)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance/students" }
+        },
+        {
+          "name": "Registrar ausencia (publica AttendanceRecorded)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/records",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"date\": \"2026-07-15\",\n  \"status\": \"Absent\",\n  \"remarks\": \"Ausencia no justificada\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reportar incidente (publica IncidentReported)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendance/incidents",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"type\": \"Wellbeing\",\n  \"severity\": \"High\",\n  \"description\": \"Estudiante reporta malestar\",\n  \"reportedBy\": \"docente\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notificaciones",
+      "item": [
+        {
+          "name": "Listar notificaciones",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/notifications?page=1&pageSize=20" }
+        },
+        {
+          "name": "Ver DLQ",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/notifications/dlq" }
+        },
+        {
+          "name": "Activar falla simulada (demo resiliencia)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/notifications/demo/failure",
+            "body": { "mode": "raw", "raw": "{\n  \"enabled\": true\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analitica",
+      "item": [
+        {
+          "name": "Dashboard consolidado",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/dashboard" }
+        },
+        {
+          "name": "Bitacora de eventos",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/events?page=1" }
+        },
+        {
+          "name": "Traza por correlacion",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/events/{{correlationId}}/trace" }
+        },
+        {
+          "name": "Estado del ecosistema",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics/ecosystem-status" }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health agregado (gateway)",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health/services" }
+        }
+      ]
+    }
+  ]
+}
