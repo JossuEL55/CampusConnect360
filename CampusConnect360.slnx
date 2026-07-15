@@ -16,5 +16,6 @@
     <Project Path="backend/Tests/AnalyticsService.Tests/AnalyticsService.Tests.csproj" />
     <Project Path="backend/Tests/AttendanceService.Tests/AttendanceService.Tests.csproj" />
     <Project Path="backend/Tests/NotificationService.Tests/NotificationService.Tests.csproj" />
+    <Project Path="backend/Tests/PaymentService.Tests/PaymentService.Tests.csproj" />
   </Folder>
 </Solution>
