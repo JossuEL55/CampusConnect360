@@ -113,7 +113,7 @@ AUTH_DEMO_PASSWORD=Demo2026*
 |---|---|---|
 | Frontend (4 portales) | http://localhost:3000 | usuarios de prueba (ver §6) |
 | Gateway — health agregado | http://localhost:8088/health/services | público |
-| Swagger por servicio | http://localhost:8088/api/academic/swagger, etc. | público |
+| Swagger/OpenAPI por servicio | Academic http://localhost:5001/swagger · Payments http://localhost:5002/swagger · Attendance http://localhost:5003/openapi/v1.json · Notifications http://localhost:5004/openapi/v1.json · Analytics http://localhost:5005/openapi/v1.json | público (evidencia técnica) |
 | RabbitMQ (panel) | http://localhost:15672 | `campus` / `campusrabbit` |
 | Seq (logs) | http://localhost:8081 | `admin` / `campuseq` |
 
@@ -216,6 +216,7 @@ con la marca `generatedAt`.
 ```
 ├── docker-compose.yml            # orquestación de todo el ecosistema
 ├── .env.example                  # variables de entorno de ejemplo
+├── docs/                         # colección Postman (respaldo técnico)
 ├── scripts/                      # deploy, stop, reset, pruebas de rutas, eventos demo
 ├── infrastructure/
 │   ├── postgres/                 # init de esquemas
