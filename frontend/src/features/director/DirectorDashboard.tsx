@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, Stat, statusTone } from '../../shared/ui/bits'
+import { useSection } from '../../shared/ui/use-section'
 import { useDashboard, useEcosystemStatus, useEventLog, useFailures, useNotifications, useTrace } from './api'
 import type { EventFilters } from './api'
 
@@ -14,13 +15,17 @@ function spark(value: number, ceiling: number): number {
 type Tab = 'eventos' | 'traza' | 'fallos' | 'notificaciones' | 'ecosistema'
 
 export function DirectorDashboard() {
+  const [section] = useSection(['indicadores', 'bitacora'])
   const dashboard = useDashboard()
   const [tab, setTab] = useState<Tab>('eventos')
 
   return (
     <>
       <div className="section-head">
-        <PageHead kicker="Dashboard directivo" title="Estado general de la red">
+        <PageHead
+          kicker="Dashboard directivo"
+          title={section === 'bitacora' ? 'Bitácora y detalle' : 'Estado general de la red'}
+        >
           {dashboard.data
             ? `Actualizado ${new Date(dashboard.data.generatedAt).toLocaleTimeString()} · se refresca cada 10 s.`
             : 'Indicadores consolidados de matrícula, finanzas, asistencia y salud del ecosistema.'}
@@ -35,9 +40,9 @@ export function DirectorDashboard() {
       {dashboard.isPending && <Loading label="Cargando indicadores…" />}
       {dashboard.isError && <ErrorState error={dashboard.error} onRetry={() => dashboard.refetch()} />}
 
-      {dashboard.data && (
+      {section === 'indicadores' && dashboard.data && (
         <>
-          <div className="stat-grid" id="indicadores">
+          <div className="stat-grid">
             <Stat label="Estudiantes matriculados" value={dashboard.data.students.enrolledTotal} hint={`Hoy: ${dashboard.data.students.enrolledToday}`} spark={spark(dashboard.data.students.enrolledTotal, 20)} />
             <Stat label="Pagos confirmados" value={dashboard.data.payments.confirmedTotal} hint={money.format(dashboard.data.payments.confirmedAmount)} spark={spark(dashboard.data.payments.confirmedTotal, 20)} />
             <Stat label="Registros de asistencia" value={dashboard.data.attendance.recordsTotal} hint={`Ausencias hoy: ${dashboard.data.attendance.absencesToday}`} spark={spark(dashboard.data.attendance.recordsTotal, 30)} />
@@ -56,7 +61,8 @@ export function DirectorDashboard() {
         </>
       )}
 
-      <section className="card" id="bitacora">
+      {section === 'bitacora' && (
+      <section className="card">
         <div className="tabs" role="tablist">
           {(
             [
@@ -78,6 +84,7 @@ export function DirectorDashboard() {
         {tab === 'notificaciones' && <NotificationsTab />}
         {tab === 'ecosistema' && <EcosystemTab />}
       </section>
+      )}
     </>
   )
 }

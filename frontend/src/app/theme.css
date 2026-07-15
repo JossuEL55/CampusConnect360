@@ -112,6 +112,25 @@ input:focus, select:focus, textarea:focus {
 }
 input:disabled { background: var(--surface-alt); }
 
+.input-affix { position: relative; }
+.input-affix input { padding-right: 42px; }
+.affix-btn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.affix-btn:hover { color: var(--ink); background: var(--surface-alt); }
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -223,21 +242,27 @@ input:disabled { background: var(--surface-alt); }
   color: var(--text-3);
   padding: 0 12px 10px;
 }
-.subnav a {
+.subnav button {
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 0 12px;
   height: 40px;
+  width: 100%;
+  border: 0;
+  background: transparent;
   border-radius: var(--radius-sm);
   color: var(--text-2);
-  text-decoration: none;
+  text-align: left;
+  font: inherit;
   font-size: 13.5px;
   font-weight: 500;
+  cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
-.subnav a:hover { background: var(--surface-alt); color: var(--ink); }
-.subnav a.active { background: var(--brand-tint); color: var(--brand); font-weight: 600; }
+.subnav button svg { flex: none; }
+.subnav button:hover { background: var(--surface-alt); color: var(--ink); }
+.subnav button.active { background: var(--brand-tint); color: var(--brand); font-weight: 600; }
 
 .content { min-width: 0; padding: 30px 34px 60px; display: grid; gap: 1rem; align-content: start; }
 
@@ -504,7 +529,10 @@ tr.selectable { cursor: pointer; }
 .toast-error { border-left-color: var(--err); }
 
 /* ---- Split (portales con detalle) ---- */
-.split { display: grid; grid-template-columns: minmax(320px, 5fr) minmax(320px, 7fr); gap: 1rem; align-items: start; }
+.split { display: grid; grid-template-columns: minmax(340px, 5fr) minmax(340px, 7fr); gap: 1rem; align-items: start; }
+
+/* ---- Grid de tarjetas de una sección (no aprieta formularios) ---- */
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem; align-items: start; }
 
 /* ---- Login split ---- */
 .login-split { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 0.95fr; }
@@ -540,7 +568,7 @@ tr.selectable { cursor: pointer; }
 .brand-side .brand-top { position: relative; }
 .brand-side .wordmark-badge { width: 38px; height: 38px; border-radius: 9px; }
 .brand-side .brand-name { font-size: 17px; }
-.brand-msg { position: relative; margin-top: auto; }
+.brand-msg { position: relative; margin: auto 0; }
 .brand-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(255 255 255 / 0.72); }
 .brand-headline { margin: 14px 0 16px; font-size: 38px; line-height: 1.12; font-weight: 600; letter-spacing: -0.02em; max-width: 12ch; }
 .brand-sub { font-size: 15px; line-height: 1.6; color: rgb(255 255 255 / 0.86); max-width: 40ch; }
@@ -583,7 +611,7 @@ tr.selectable { cursor: pointer; }
   .shell-body { grid-template-columns: 1fr; }
   .subnav { display: flex; gap: 6px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; }
   .subnav-label { display: none; }
-  .subnav a { height: 36px; white-space: nowrap; }
+  .subnav button { height: 36px; width: auto; white-space: nowrap; }
   .content { padding: 24px 18px 60px; }
   .split { grid-template-columns: 1fr; }
 }

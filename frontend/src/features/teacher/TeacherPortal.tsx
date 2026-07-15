@@ -3,23 +3,31 @@ import type { FormEvent } from 'react'
 import { useAuth } from '../../shared/auth/auth-context'
 import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
+import { useSection } from '../../shared/ui/use-section'
 import { useRecordAttendance, useReportIncident, useStudentHistory, useTeacherStudents } from './api'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+const TITLES: Record<string, [string, string]> = {
+  estudiantes: ['Mis estudiantes', 'Consulta a tus estudiantes y revisa su historial de asistencia e incidentes.'],
+  asistencia: ['Registrar asistencia', 'Marca la asistencia diaria; las ausencias y atrasos generan notificación al representante.'],
+  incidentes: ['Reportar incidente', 'Registra novedades de bienestar; severidad media o alta genera alerta al representante.'],
+}
+
 export function TeacherPortal() {
+  const [section] = useSection(['estudiantes', 'asistencia', 'incidentes'])
   const [q, setQ] = useState('')
   const [grade, setGrade] = useState('')
   const students = useTeacherStudents(q, grade)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [title, subtitle] = TITLES[section]
 
   return (
     <>
-      <PageHead kicker="Portal docente / bienestar" title="Mis estudiantes">
-        Consulta a tus estudiantes, registra asistencia e incidentes de bienestar y revisa su historial.
-      </PageHead>
-      <div className="split">
-        <section className="card" id="estudiantes">
+      <PageHead kicker="Portal docente / bienestar" title={title}>{subtitle}</PageHead>
+
+      {section === 'estudiantes' && (
+        <section className="card">
           <h2>Estudiantes</h2>
           <div className="form-grid">
             <Field label="Buscar">
@@ -42,11 +50,7 @@ export function TeacherPortal() {
                 </thead>
                 <tbody>
                   {students.data.map((student) => (
-                    <tr
-                      key={student.id}
-                      className="selectable"
-                      onClick={() => setSelectedId(student.id)}
-                    >
+                    <tr key={student.id} className="selectable" onClick={() => setSelectedId(student.id)}>
                       <td>{student.fullName ?? student.studentCode ?? student.id}</td>
                       <td>{student.grade ?? '—'}</td>
                     </tr>
@@ -58,12 +62,10 @@ export function TeacherPortal() {
 
           {selectedId && <StudentHistory studentId={selectedId} />}
         </section>
+      )}
 
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <div id="asistencia"><AttendanceForm studentId={selectedId} /></div>
-          <div id="incidentes"><IncidentForm studentId={selectedId} /></div>
-        </div>
-      </div>
+      {section === 'asistencia' && <AttendanceForm studentId={selectedId} />}
+      {section === 'incidentes' && <IncidentForm studentId={selectedId} />}
     </>
   )
 }
