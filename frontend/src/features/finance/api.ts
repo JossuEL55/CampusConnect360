@@ -50,7 +50,11 @@ export function useDebtorStudents() {
   return useQuery({
     queryKey: ['finance', 'students'],
     queryFn: async () =>
-      asItems((await apiClient.get<DebtorStudent[] | Paged<DebtorStudent>>('/api/payments/students')).data),
+      asItems(
+        (await apiClient.get<DebtorStudent[] | Paged<DebtorStudent>>('/api/payments/students', {
+          params: { page: 1, pageSize: 20 },
+        })).data,
+      ),
   })
 }
 
@@ -59,7 +63,9 @@ export function usePendingDebts() {
     queryKey: ['finance', 'debts', 'Pending'],
     queryFn: async () =>
       asItems(
-        (await apiClient.get<Debt[] | Paged<Debt>>('/api/payments/debts', { params: { status: 'Pending' } })).data,
+        (await apiClient.get<Debt[] | Paged<Debt>>('/api/payments/debts', {
+          params: { status: 'Pending', page: 1, pageSize: 20 },
+        })).data,
       ),
   })
 }
@@ -69,7 +75,9 @@ export function useConfirmedPayments() {
     queryKey: ['finance', 'payments', 'Confirmed'],
     queryFn: async () =>
       asItems(
-        (await apiClient.get<Payment[] | Paged<Payment>>('/api/payments', { params: { status: 'Confirmed' } })).data,
+        (await apiClient.get<Payment[] | Paged<Payment>>('/api/payments', {
+          params: { status: 'Confirmed', page: 1, pageSize: 20 },
+        })).data,
       ),
   })
 }
