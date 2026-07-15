@@ -254,10 +254,10 @@ el health agregado está `Healthy` y se han verificado rutas y autenticación.
 
 ## 17. Declaración de uso de IA
 
-Se utilizaron herramientas de IA generativa como apoyo para generar código base, proponer
-estilos visuales del frontend, redactar documentación y crear pruebas. El equipo comprende,
-adapta, integra y defiende todo el código presentado; las decisiones arquitectónicas y la
-integración entre servicios son propias.
+Se usó IA generativa como apoyo puntual para código base, pruebas unitarias, revisión de
+errores y documentación, dentro de los usos permitidos por la consigna. El equipo revisó,
+adaptó e integró todo el resultado y comprende y defiende cada componente; las decisiones
+arquitectónicas y la integración entre servicios son propias.
 
 ## 18. Limitaciones y mejoras futuras
 
