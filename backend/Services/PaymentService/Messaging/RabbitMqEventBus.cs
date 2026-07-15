@@ -9,6 +9,8 @@ using RabbitMQ.Client.Events;
 using SharedKernel.Configuration;
 using SharedKernel.Events;
 using SharedKernel.Messaging;
+// Resuelve la ambigüedad con el payload homónimo del SharedKernel.
+using StudentEnrolledData = PaymentService.Api.StudentEnrolledData;
 
 namespace PaymentService.Messaging;
 

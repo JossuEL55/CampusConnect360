@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 using PaymentService.Api;
 using PaymentService.Messaging;
 using SharedKernel.Events;
+// Resuelve la ambigüedad con el payload homónimo del SharedKernel.
+using StudentEnrolledData = PaymentService.Api.StudentEnrolledData;
 
 namespace PaymentService.Tests;
 

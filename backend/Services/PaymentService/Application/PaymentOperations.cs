@@ -6,6 +6,8 @@ using PaymentService.Domain;
 using PaymentService.Infrastructure;
 using SharedKernel.Events;
 using SharedKernel.Messaging;
+// Resuelve la ambigüedad con el payload homónimo del SharedKernel.
+using StudentEnrolledData = PaymentService.Api.StudentEnrolledData;
 
 namespace PaymentService.Application;
 

@@ -11,15 +11,15 @@ public static class PaymentEndpoints
     {
         var group = endpoints.MapGroup("/api/payments");
 
-        group.MapGet("/students", (int page, int pageSize, PaymentOperations service, CancellationToken ct) =>
-                service.ListStudentsAsync(page == 0 ? 1 : page, pageSize == 0 ? 20 : pageSize, ct))
+        group.MapGet("/students", (int? page, int? pageSize, PaymentOperations service, CancellationToken ct) =>
+                service.ListStudentsAsync(page ?? 1, pageSize ?? 20, ct))
             .Produces<PagedResponse<StudentSummaryResponse>>();
         group.MapPost("/debts", CreateDebt)
             .Produces<DebtResponse>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
-        group.MapGet("/debts", (DebtStatus? status, int page, int pageSize, PaymentOperations service, CancellationToken ct) =>
-                service.ListDebtsAsync(status, page == 0 ? 1 : page, pageSize == 0 ? 20 : pageSize, ct))
+        group.MapGet("/debts", (DebtStatus? status, int? page, int? pageSize, PaymentOperations service, CancellationToken ct) =>
+                service.ListDebtsAsync(status, page ?? 1, pageSize ?? 20, ct))
             .Produces<PagedResponse<DebtResponse>>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
         group.MapPost("/debts/{debtId:guid}/confirm", ConfirmDebt)
@@ -27,8 +27,8 @@ public static class PaymentEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
-        group.MapGet("/", (PaymentStatus? status, int page, int pageSize, PaymentOperations service, CancellationToken ct) =>
-                service.ListPaymentsAsync(status, page == 0 ? 1 : page, pageSize == 0 ? 20 : pageSize, ct))
+        group.MapGet("/", (PaymentStatus? status, int? page, int? pageSize, PaymentOperations service, CancellationToken ct) =>
+                service.ListPaymentsAsync(status, page ?? 1, pageSize ?? 20, ct))
             .Produces<PagedResponse<PaymentResponse>>();
         group.MapGet("/students/{studentId:guid}", (Guid studentId, PaymentOperations service, CancellationToken ct) =>
                 service.GetStudentHistoryAsync(studentId, ct))
