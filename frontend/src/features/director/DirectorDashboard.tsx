@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, Stat, statusTone } from '../../shared/ui/bits'
 import { useSection } from '../../shared/ui/use-section'
@@ -18,6 +18,12 @@ export function DirectorDashboard() {
   const [section] = useSection(['indicadores', 'bitacora'])
   const dashboard = useDashboard()
   const [tab, setTab] = useState<Tab>('eventos')
+  const [traceCorrelation, setTraceCorrelation] = useState('')
+
+  function openTrace(correlationId: string) {
+    setTraceCorrelation(correlationId)
+    setTab('traza')
+  }
 
   return (
     <>
@@ -78,8 +84,8 @@ export function DirectorDashboard() {
             </button>
           ))}
         </div>
-        {tab === 'eventos' && <EventLogTab />}
-        {tab === 'traza' && <TraceTab />}
+        {tab === 'eventos' && <EventLogTab onTrace={openTrace} />}
+        {tab === 'traza' && <TraceTab correlationId={traceCorrelation} onSearch={setTraceCorrelation} />}
         {tab === 'fallos' && <FailuresTab />}
         {tab === 'notificaciones' && <NotificationsTab />}
         {tab === 'ecosistema' && <EcosystemTab />}
@@ -99,7 +105,7 @@ const EVENT_TYPES = [
   'StudentStatusUpdated',
 ]
 
-function EventLogTab() {
+function EventLogTab({ onTrace }: { onTrace: (correlationId: string) => void }) {
   const [filters, setFilters] = useState<EventFilters>({})
   const [page, setPage] = useState(1)
   const events = useEventLog(filters, page)
@@ -142,7 +148,7 @@ function EventLogTab() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Tipo</th><th>Origen</th><th>Ocurrido</th><th>Correlación</th></tr>
+                <tr><th>Tipo</th><th>Origen</th><th>Ocurrido</th><th>Correlación</th><th></th></tr>
               </thead>
               <tbody>
                 {events.data.items.map((entry) => (
@@ -151,6 +157,11 @@ function EventLogTab() {
                     <td>{entry.source}</td>
                     <td>{new Date(entry.occurredAt).toLocaleString()}</td>
                     <td><small>{entry.correlationId}</small></td>
+                    <td>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => onTrace(entry.correlationId)}>
+                        Ver traza
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -167,14 +178,15 @@ function EventLogTab() {
   )
 }
 
-function TraceTab() {
-  const [input, setInput] = useState('')
-  const [correlationId, setCorrelationId] = useState<string | null>(null)
-  const trace = useTrace(correlationId)
+function TraceTab({ correlationId, onSearch }: { correlationId: string; onSearch: (id: string) => void }) {
+  const [input, setInput] = useState(correlationId)
+  const trace = useTrace(correlationId || null)
+
+  useEffect(() => setInput(correlationId), [correlationId])
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
-    setCorrelationId(input.trim() || null)
+    onSearch(input.trim())
   }
 
   return (
