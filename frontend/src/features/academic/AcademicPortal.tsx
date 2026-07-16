@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Badge, EmptyState, ErrorState, Field, Loading, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
+import { useSection } from '../../shared/ui/use-section'
 import {
   useCreateEnrollment,
   useCreateStudent,
@@ -23,6 +24,7 @@ const EMPTY_FORM: StudentInput = {
 }
 
 export function AcademicPortal() {
+  const [section, goSection] = useSection(['estudiantes', 'ficha'])
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -38,10 +40,23 @@ export function AcademicPortal() {
     setSearch(query.trim())
   }
 
+  function selectStudent(id: string) {
+    setSelectedId(id)
+    goSection('ficha')
+  }
+
   return (
     <>
-      <h1>Portal Académico</h1>
-      <div className="split">
+      <PageHead
+        kicker="Portal académico"
+        title={section === 'ficha' ? 'Ficha del estudiante' : 'Estudiantes y matrículas'}
+      >
+        {section === 'ficha'
+          ? 'Datos, estado académico y financiero, matrículas e historial de eventos del estudiante.'
+          : 'Registra estudiantes, búscalos y abre su ficha para gestionar la matrícula.'}
+      </PageHead>
+
+      {section === 'estudiantes' && (
         <section className="card">
           <div className="section-head">
             <h2>Estudiantes</h2>
@@ -50,14 +65,7 @@ export function AcademicPortal() {
             </button>
           </div>
 
-          {showForm && (
-            <RegisterStudentForm
-              onCreated={(id) => {
-                setShowForm(false)
-                setSelectedId(id)
-              }}
-            />
-          )}
+          {showForm && <RegisterStudentForm onCreated={(id) => { setShowForm(false); selectStudent(id) }} />}
 
           <form onSubmit={onSearch} className="form-grid" role="search">
             <Field label="Buscar por nombre o cédula">
@@ -85,11 +93,7 @@ export function AcademicPortal() {
                   </thead>
                   <tbody>
                     {students.data.items.map((student) => (
-                      <tr
-                        key={student.studentId}
-                        className="selectable"
-                        onClick={() => setSelectedId(student.studentId)}
-                      >
+                      <tr key={student.studentId} className="selectable" onClick={() => selectStudent(student.studentId)}>
                         <td>{student.code}</td>
                         <td>{student.firstName} {student.lastName}</td>
                         <td>{student.grade}</td>
@@ -113,16 +117,23 @@ export function AcademicPortal() {
             </>
           )}
         </section>
+      )}
 
-        {selectedId ? (
+      {section === 'ficha' && (
+        selectedId ? (
           <StudentDetail studentId={selectedId} />
         ) : (
           <section className="card">
             <h2>Ficha del estudiante</h2>
-            <EmptyState message="Selecciona un estudiante de la lista para ver su ficha, matrículas y eventos." />
+            <EmptyState message="Aún no has seleccionado un estudiante: elige uno de la lista y su ficha aparecerá aquí." />
+            <div className="form-actions" style={{ justifyContent: 'center' }}>
+              <button type="button" className="btn" onClick={() => goSection('estudiantes')}>
+                Ir a la lista de estudiantes
+              </button>
+            </div>
           </section>
-        )}
-      </div>
+        )
+      )}
     </>
   )
 }
@@ -230,7 +241,7 @@ function StudentDetail({ studentId }: { studentId: string }) {
 
   const data = student.data
   return (
-    <section className="card">
+    <section className="card" id="ficha">
       <div className="section-head">
         <h2>{data.firstName} {data.lastName}</h2>
         <div>

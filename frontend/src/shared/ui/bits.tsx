@@ -1,12 +1,35 @@
 import type { ReactNode } from 'react'
 import { ApiError } from '../api/client'
 
-export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+export function PageHead({ kicker, title, children }: { kicker: string; title: string; children?: ReactNode }) {
+  return (
+    <div className="pagehead">
+      <span className="kicker">{kicker}</span>
+      <h1>{title}</h1>
+      {children && <p>{children}</p>}
+    </div>
+  )
+}
+
+export function Stat({
+  label,
+  value,
+  hint,
+  spark,
+}: {
+  label: string
+  value: ReactNode
+  hint?: string
+  spark?: number
+}) {
   return (
     <div className="stat">
       <span className="stat-value">{value}</span>
       <span className="stat-label">{label}</span>
       {hint && <span className="stat-hint">{hint}</span>}
+      {spark !== undefined && (
+        <span className="kpi-spark"><i style={{ width: `${Math.min(100, Math.max(4, spark))}%` }} /></span>
+      )}
     </div>
   )
 }

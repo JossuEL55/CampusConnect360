@@ -1,58 +1,73 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Badge, EmptyState, ErrorState, Field, Loading, Stat, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, Stat, statusTone } from '../../shared/ui/bits'
+import { useSection } from '../../shared/ui/use-section'
 import { useDashboard, useEcosystemStatus, useEventLog, useFailures, useNotifications, useTrace } from './api'
 import type { EventFilters } from './api'
 
 const money = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' })
 
+// Techos de referencia para el ancho de la sparkline (solo visual).
+function spark(value: number, ceiling: number): number {
+  return Math.round((value / ceiling) * 100)
+}
+
 type Tab = 'eventos' | 'traza' | 'fallos' | 'notificaciones' | 'ecosistema'
 
 export function DirectorDashboard() {
+  const [section] = useSection(['indicadores', 'bitacora'])
   const dashboard = useDashboard()
   const [tab, setTab] = useState<Tab>('eventos')
+  const [traceCorrelation, setTraceCorrelation] = useState('')
+
+  function openTrace(correlationId: string) {
+    setTraceCorrelation(correlationId)
+    setTab('traza')
+  }
 
   return (
     <>
       <div className="section-head">
-        <h1>Dashboard Directivo</h1>
+        <PageHead
+          kicker="Dashboard directivo"
+          title={section === 'bitacora' ? 'Bitácora y detalle' : 'Estado general de la red'}
+        >
+          {dashboard.data
+            ? `Actualizado ${new Date(dashboard.data.generatedAt).toLocaleTimeString()} · se refresca cada 10 s.`
+            : 'Indicadores consolidados de matrícula, finanzas, asistencia y salud del ecosistema.'}
+        </PageHead>
         {dashboard.data && (
-          <div>
-            <Badge tone={statusTone(dashboard.data.ecosystemStatus)}>
-              Ecosistema {dashboard.data.ecosystemStatus}
-            </Badge>{' '}
-            <small>Actualizado {new Date(dashboard.data.generatedAt).toLocaleTimeString()} · se refresca cada 10 s</small>
-          </div>
+          <Badge tone={statusTone(dashboard.data.ecosystemStatus)}>
+            Ecosistema {dashboard.data.ecosystemStatus}
+          </Badge>
         )}
       </div>
 
       {dashboard.isPending && <Loading label="Cargando indicadores…" />}
       {dashboard.isError && <ErrorState error={dashboard.error} onRetry={() => dashboard.refetch()} />}
 
-      {dashboard.data && (
+      {section === 'indicadores' && dashboard.data && (
         <>
           <div className="stat-grid">
-            <Stat label="Estudiantes matriculados" value={dashboard.data.students.enrolledTotal} hint={`Hoy: ${dashboard.data.students.enrolledToday}`} />
-            <Stat label="Pagos confirmados" value={dashboard.data.payments.confirmedTotal} hint={money.format(dashboard.data.payments.confirmedAmount)} />
-            <Stat label="Registros de asistencia" value={dashboard.data.attendance.recordsTotal} hint={`Ausencias hoy: ${dashboard.data.attendance.absencesToday}`} />
-            <Stat label="Incidentes reportados" value={dashboard.data.incidents.reportedTotal} hint={`Severidad alta: ${dashboard.data.incidents.highSeverity}`} />
-            <Stat label="Eventos procesados" value={dashboard.data.events.processedTotal} />
-            <Stat label="Mensajes fallidos" value={dashboard.data.failures.failedMessages} hint={`DLQ: ${dashboard.data.failures.dlqDepth}`} />
+            <Stat label="Estudiantes matriculados" value={dashboard.data.students.enrolledTotal} hint={`Hoy: ${dashboard.data.students.enrolledToday}`} spark={spark(dashboard.data.students.enrolledTotal, 20)} />
+            <Stat label="Pagos confirmados" value={dashboard.data.payments.confirmedTotal} hint={money.format(dashboard.data.payments.confirmedAmount)} spark={spark(dashboard.data.payments.confirmedTotal, 20)} />
+            <Stat label="Registros de asistencia" value={dashboard.data.attendance.recordsTotal} hint={`Ausencias hoy: ${dashboard.data.attendance.absencesToday}`} spark={spark(dashboard.data.attendance.recordsTotal, 30)} />
+            <Stat label="Incidentes reportados" value={dashboard.data.incidents.reportedTotal} hint={`Severidad alta: ${dashboard.data.incidents.highSeverity}`} spark={spark(dashboard.data.incidents.reportedTotal, 20)} />
+            <Stat label="Eventos procesados" value={dashboard.data.events.processedTotal} hint="bus de mensajería" spark={spark(dashboard.data.events.processedTotal, 60)} />
+            <Stat label="Mensajes fallidos" value={dashboard.data.failures.failedMessages} hint={`DLQ: ${dashboard.data.failures.dlqDepth}`} spark={spark(dashboard.data.failures.failedMessages, 10)} />
           </div>
 
-          <section className="card">
-            <h2>Eventos por tipo</h2>
-            <div>
-              {Object.entries(dashboard.data.events.byType).map(([type, count]) => (
-                <span key={type} style={{ marginRight: '0.5rem', display: 'inline-block', marginBottom: '0.4rem' }}>
-                  <Badge tone="brand">{type}: {count}</Badge>
-                </span>
-              ))}
-            </div>
-          </section>
+          <div className="chip-row" aria-label="Eventos por tipo">
+            {Object.entries(dashboard.data.events.byType).map(([type, count]) => (
+              <span key={type} className="chip">
+                <span className="dot" />{type} <b>{count}</b>
+              </span>
+            ))}
+          </div>
         </>
       )}
 
+      {section === 'bitacora' && (
       <section className="card">
         <div className="tabs" role="tablist">
           {(
@@ -69,12 +84,13 @@ export function DirectorDashboard() {
             </button>
           ))}
         </div>
-        {tab === 'eventos' && <EventLogTab />}
-        {tab === 'traza' && <TraceTab />}
+        {tab === 'eventos' && <EventLogTab onTrace={openTrace} />}
+        {tab === 'traza' && <TraceTab correlationId={traceCorrelation} onSearch={setTraceCorrelation} />}
         {tab === 'fallos' && <FailuresTab />}
         {tab === 'notificaciones' && <NotificationsTab />}
         {tab === 'ecosistema' && <EcosystemTab />}
       </section>
+      )}
     </>
   )
 }
@@ -89,7 +105,7 @@ const EVENT_TYPES = [
   'StudentStatusUpdated',
 ]
 
-function EventLogTab() {
+function EventLogTab({ onTrace }: { onTrace: (correlationId: string) => void }) {
   const [filters, setFilters] = useState<EventFilters>({})
   const [page, setPage] = useState(1)
   const events = useEventLog(filters, page)
@@ -132,7 +148,7 @@ function EventLogTab() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Tipo</th><th>Origen</th><th>Ocurrido</th><th>Correlación</th></tr>
+                <tr><th>Tipo</th><th>Origen</th><th>Ocurrido</th><th>Correlación</th><th></th></tr>
               </thead>
               <tbody>
                 {events.data.items.map((entry) => (
@@ -141,6 +157,11 @@ function EventLogTab() {
                     <td>{entry.source}</td>
                     <td>{new Date(entry.occurredAt).toLocaleString()}</td>
                     <td><small>{entry.correlationId}</small></td>
+                    <td>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => onTrace(entry.correlationId)}>
+                        Ver traza
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -157,14 +178,15 @@ function EventLogTab() {
   )
 }
 
-function TraceTab() {
-  const [input, setInput] = useState('')
-  const [correlationId, setCorrelationId] = useState<string | null>(null)
-  const trace = useTrace(correlationId)
+function TraceTab({ correlationId, onSearch }: { correlationId: string; onSearch: (id: string) => void }) {
+  const [input, setInput] = useState(correlationId)
+  const trace = useTrace(correlationId || null)
+
+  useEffect(() => setInput(correlationId), [correlationId])
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
-    setCorrelationId(input.trim() || null)
+    onSearch(input.trim())
   }
 
   return (

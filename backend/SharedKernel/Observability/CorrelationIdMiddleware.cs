@@ -3,8 +3,7 @@ using Serilog.Context;
 
 namespace SharedKernel.Observability;
 
-// Obtiene o genera un identificador de correlación para cada solicitud HTTP,
-// lo devuelve al cliente y lo incorpora a los logs estructurados.
+// Obtiene o genera el X-Correlation-Id de cada solicitud y lo propaga a respuesta y logs.
 public sealed class CorrelationIdMiddleware
 {
     private readonly RequestDelegate _next;

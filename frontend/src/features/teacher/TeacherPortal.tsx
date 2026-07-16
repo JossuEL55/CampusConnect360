@@ -1,22 +1,33 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '../../shared/auth/auth-context'
-import { Badge, EmptyState, ErrorState, Field, Loading, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
+import { useSection } from '../../shared/ui/use-section'
 import { useRecordAttendance, useReportIncident, useStudentHistory, useTeacherStudents } from './api'
+import type { TeacherStudent } from './api'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+const TITLES: Record<string, [string, string]> = {
+  estudiantes: ['Mis estudiantes', 'Consulta a tus estudiantes y revisa su historial de asistencia e incidentes.'],
+  asistencia: ['Registrar asistencia', 'Marca la asistencia diaria; las ausencias y atrasos generan notificación al representante.'],
+  incidentes: ['Reportar incidente', 'Registra novedades de bienestar; severidad media o alta genera alerta al representante.'],
+}
+
 export function TeacherPortal() {
+  const [section] = useSection(['estudiantes', 'asistencia', 'incidentes'])
   const [q, setQ] = useState('')
   const [grade, setGrade] = useState('')
   const students = useTeacherStudents(q, grade)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [title, subtitle] = TITLES[section]
 
   return (
     <>
-      <h1>Portal Docente / Bienestar</h1>
-      <div className="split">
+      <PageHead kicker="Portal docente / bienestar" title={title}>{subtitle}</PageHead>
+
+      {section === 'estudiantes' && (
         <section className="card">
           <h2>Estudiantes</h2>
           <div className="form-grid">
@@ -40,11 +51,7 @@ export function TeacherPortal() {
                 </thead>
                 <tbody>
                   {students.data.map((student) => (
-                    <tr
-                      key={student.id}
-                      className="selectable"
-                      onClick={() => setSelectedId(student.id)}
-                    >
+                    <tr key={student.id} className="selectable" onClick={() => setSelectedId(student.id)}>
                       <td>{student.fullName ?? student.studentCode ?? student.id}</td>
                       <td>{student.grade ?? '—'}</td>
                     </tr>
@@ -56,17 +63,45 @@ export function TeacherPortal() {
 
           {selectedId && <StudentHistory studentId={selectedId} />}
         </section>
+      )}
 
-        <div style={{ display: 'grid', gap: '1.25rem' }}>
-          <AttendanceForm studentId={selectedId} />
-          <IncidentForm studentId={selectedId} />
-        </div>
-      </div>
+      {section === 'asistencia' && (
+        <AttendanceForm studentId={selectedId} students={students.data ?? []} />
+      )}
+      {section === 'incidentes' && (
+        <IncidentForm studentId={selectedId} students={students.data ?? []} />
+      )}
     </>
   )
 }
 
-function AttendanceForm({ studentId }: { studentId: string | null }) {
+function StudentSelect({
+  value,
+  onChange,
+  students,
+}: {
+  value: string
+  onChange: (id: string) => void
+  students: TeacherStudent[]
+}) {
+  return (
+    <Field label="Estudiante">
+      <select value={value} onChange={(e) => onChange(e.target.value)} required>
+        <option value="" disabled>
+          {students.length === 0 ? 'Sin estudiantes en la réplica' : 'Selecciona un estudiante…'}
+        </option>
+        {students.map((student) => (
+          <option key={student.id} value={student.id}>
+            {student.fullName ?? student.studentCode ?? student.id}
+            {student.grade ? ` · ${student.grade}` : ''}
+          </option>
+        ))}
+      </select>
+    </Field>
+  )
+}
+
+function AttendanceForm({ studentId, students }: { studentId: string | null; students: TeacherStudent[] }) {
   const { notify, notifyError } = useToast()
   const record = useRecordAttendance()
   const [form, setForm] = useState({ studentId: '', date: today(), status: 'Present', remarks: '' })
@@ -92,14 +127,11 @@ function AttendanceForm({ studentId }: { studentId: string | null }) {
     <section className="card">
       <h2>Registrar asistencia</h2>
       <form onSubmit={onSubmit} className="form-grid">
-        <Field label="ID del estudiante">
-          <input
-            value={effectiveStudentId}
-            onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-            required
-            placeholder="Selecciona de la lista o pega el UUID"
-          />
-        </Field>
+        <StudentSelect
+          value={effectiveStudentId}
+          onChange={(id) => setForm({ ...form, studentId: id })}
+          students={students}
+        />
         <Field label="Fecha">
           <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
         </Field>
@@ -122,7 +154,7 @@ function AttendanceForm({ studentId }: { studentId: string | null }) {
   )
 }
 
-function IncidentForm({ studentId }: { studentId: string | null }) {
+function IncidentForm({ studentId, students }: { studentId: string | null; students: TeacherStudent[] }) {
   const { user } = useAuth()
   const { notify, notifyError } = useToast()
   const report = useReportIncident()
@@ -150,13 +182,11 @@ function IncidentForm({ studentId }: { studentId: string | null }) {
     <section className="card">
       <h2>Reportar incidente</h2>
       <form onSubmit={onSubmit} className="form-grid">
-        <Field label="ID del estudiante">
-          <input
-            value={effectiveStudentId}
-            onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-            required
-          />
-        </Field>
+        <StudentSelect
+          value={effectiveStudentId}
+          onChange={(id) => setForm({ ...form, studentId: id })}
+          students={students}
+        />
         <Field label="Tipo">
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
             <option value="Academic">Académico</option>

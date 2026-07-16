@@ -79,8 +79,7 @@ public static class AnalyticsEndpoints
         {
             generatedAt = DateTimeOffset.UtcNow,
             students = new { enrolledTotal, enrolledToday },
-            // El catálogo de eventos no incluye la creación de deudas, por lo que los
-            // indicadores de pendientes permanecen en 0 hasta que Payments publique ese evento.
+            // El catálogo no tiene evento de creación de deudas; los pendientes quedan en 0.
             payments = new { confirmedTotal, confirmedAmount, pendingTotal = 0, pendingAmount = 0m },
             attendance = new { recordsTotal, absencesToday },
             incidents = new { reportedTotal = incidentsTotal, highSeverity },

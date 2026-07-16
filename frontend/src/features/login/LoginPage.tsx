@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/auth/auth-context'
 import { homeFor } from '../../shared/auth/roles'
 import { useToast } from '../../shared/ui/toast'
+import { EyeIcon, EyeOffIcon, Wordmark } from '../../shared/ui/icons'
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -11,6 +12,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setSubmitting] = useState(false)
 
   if (user) return <Navigate to={homeFor(user.role)} replace />
@@ -28,49 +30,80 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <main className="login-card" aria-busy={isSubmitting}>
-        <div className="progress-slot">{isSubmitting && <div className="progress-bar" aria-hidden="true" />}</div>
-        <div className="login-body">
-          <span className="login-brand">
-            <span className="brand-mark" aria-hidden="true">C</span>{' '}
+    <div className="login-split">
+      <aside className="brand-side" aria-hidden="true">
+        <div className="brand-pattern" />
+        <div className="brand-rings" />
+        <div className="brand-top">
+          <span className="wordmark-badge"><Wordmark size={21} /></span>
+          <span className="brand-name">CampusConnect <span>360</span></span>
+        </div>
+        <div className="brand-msg">
+          <div className="brand-eyebrow">Red de colegios · Ecuador</div>
+          <h2 className="brand-headline">Una comunidad educativa, un solo panel.</h2>
+          <p className="brand-sub">
+            Matrícula, finanzas, asistencia y dirección conectadas en tiempo real.
+            Información confiable para tomar mejores decisiones cada día.
+          </p>
+        </div>
+      </aside>
+
+      <div className="form-side">
+        <main className="login-card" aria-busy={isSubmitting}>
+          {isSubmitting && <div className="login-progress" aria-hidden="true" />}
+          <div className="login-brand">
+            <span className="wordmark-badge"><Wordmark size={19} /></span>{' '}
             CampusConnect 360
-          </span>
-          <h1>Iniciar sesión</h1>
-          <form onSubmit={onSubmit} className="login-form">
-            <label className="field">
-              <span className="field-label">Usuario</span>
+          </div>
+          <h1 className="login-title">Bienvenido de nuevo</h1>
+          <p className="login-sub">Ingrese con su cuenta institucional para continuar.</p>
+          <form onSubmit={onSubmit}>
+            <div className="field">
+              <label htmlFor="login-user">Usuario</label>
               <input
+                id="login-user"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
+                placeholder="nombre.apellido"
                 required
                 autoFocus
                 disabled={isSubmitting}
               />
-            </label>
-            <label className="field">
-              <span className="field-label">Contraseña</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                required
-                disabled={isSubmitting}
-              />
-            </label>
-            <div className="login-actions">
-              <button type="submit" className="btn" disabled={isSubmitting}>
-                {isSubmitting ? 'Conectando…' : 'Entrar'}
-              </button>
             </div>
+            <div className="field">
+              <label htmlFor="login-pass">Contraseña</label>
+              <div className="input-affix">
+                <input
+                  id="login-pass"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  required
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  className="affix-btn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </div>
+            <button type="submit" className="btn btn-block" disabled={isSubmitting}>
+              {isSubmitting ? 'Conectando…' : 'Entrar'}
+            </button>
           </form>
-        </div>
-      </main>
-      <footer className="login-footer">
-        Acceso exclusivo para personal autorizado de la red de colegios.
-      </footer>
+          <div className="login-foot">
+            ¿Problemas para ingresar? Contacte a la mesa de ayuda de su colegio.
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

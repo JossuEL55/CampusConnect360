@@ -21,6 +21,7 @@ builder.Services.AddSingleton<EventProjector>();
 builder.Services.AddSingleton<EcosystemMonitor>();
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<AnalyticsEventConsumer>();
+builder.Services.AddOpenApi();
 
 builder.Services
     .AddHealthChecks()
@@ -47,6 +48,7 @@ app.MapHealthChecks(
     });
 
 app.MapAnalyticsEndpoints();
+app.MapOpenApi();
 
 app.Run();
 

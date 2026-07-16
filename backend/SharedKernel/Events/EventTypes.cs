@@ -1,7 +1,6 @@
 namespace SharedKernel.Events;
 
 // Catálogo centralizado de eventos de negocio del ecosistema.
-// Evita diferencias de escritura entre publicadores y consumidores.
 public static class EventTypes
 {
     public const string StudentEnrolled = nameof(StudentEnrolled);

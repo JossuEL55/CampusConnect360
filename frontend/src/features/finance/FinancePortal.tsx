@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Badge, EmptyState, ErrorState, Field, Loading, statusTone } from '../../shared/ui/bits'
+import { Badge, EmptyState, ErrorState, Field, Loading, PageHead, statusTone } from '../../shared/ui/bits'
 import { useToast } from '../../shared/ui/toast'
+import { useSection } from '../../shared/ui/use-section'
 import {
   useConfirmPayment,
   useConfirmedPayments,
@@ -14,19 +15,27 @@ import type { Debt } from './api'
 const money = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' })
 
 export function FinancePortal() {
+  const [section] = useSection(['deudas', 'estudiantes'])
+
   return (
     <>
-      <h1>Portal Financiero</h1>
-      <div className="split">
-        <div style={{ display: 'grid', gap: '1.25rem' }}>
+      <PageHead
+        kicker="Portal financiero"
+        title={section === 'estudiantes' ? 'Estudiantes matriculados' : 'Deudas y confirmación de pagos'}
+      >
+        {section === 'estudiantes'
+          ? 'Consulta los estudiantes matriculados y su resumen de deuda.'
+          : 'Registra obligaciones de pago, confirma transacciones y consulta pagos confirmados.'}
+      </PageHead>
+
+      {section === 'deudas' && (
+        <div className="feature-grid">
           <CreateDebtSection />
-          <DebtorStudentsSection />
-        </div>
-        <div style={{ display: 'grid', gap: '1.25rem' }}>
           <PendingDebtsSection />
           <ConfirmedPaymentsSection />
         </div>
-      </div>
+      )}
+      {section === 'estudiantes' && <DebtorStudentsSection />}
     </>
   )
 }
@@ -34,13 +43,14 @@ export function FinancePortal() {
 function CreateDebtSection() {
   const { notify, notifyError } = useToast()
   const createDebt = useCreateDebt()
+  const students = useDebtorStudents()
   const [form, setForm] = useState({ studentId: '', concept: '', amount: '', dueDate: '' })
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     try {
       await createDebt.mutateAsync({
-        studentId: form.studentId.trim(),
+        studentId: form.studentId,
         concept: form.concept.trim(),
         amount: Number(form.amount),
         dueDate: form.dueDate,
@@ -56,8 +66,18 @@ function CreateDebtSection() {
     <section className="card">
       <h2>Registrar obligación de pago</h2>
       <form onSubmit={onSubmit} className="form-grid">
-        <Field label="ID del estudiante">
-          <input value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} required />
+        <Field label="Estudiante">
+          <select value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} required>
+            <option value="" disabled>
+              {(students.data ?? []).length === 0 ? 'Sin estudiantes matriculados' : 'Selecciona un estudiante…'}
+            </option>
+            {(students.data ?? []).map((student) => (
+              <option key={student.studentId} value={student.studentId}>
+                {student.fullName ?? student.studentCode ?? student.studentId}
+                {student.grade ? ` · ${student.grade}` : ''}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Concepto">
           <input value={form.concept} onChange={(e) => setForm({ ...form, concept: e.target.value })} required placeholder="Matrícula 2026-2027" />
@@ -142,11 +162,12 @@ function PendingDebtsSection() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Concepto</th><th>Monto</th><th>Vence</th><th></th></tr>
+              <tr><th>Estudiante</th><th>Concepto</th><th>Monto</th><th>Vence</th><th></th></tr>
             </thead>
             <tbody>
               {debts.data.map((debt) => (
                 <tr key={debt.debtId}>
+                  <td>{debt.studentFullName ?? '—'}</td>
                   <td>{debt.concept}</td>
                   <td>{money.format(debt.amount)}</td>
                   <td>{debt.dueDate}</td>
@@ -164,7 +185,7 @@ function PendingDebtsSection() {
 
       {selected && (
         <form onSubmit={onConfirm} className="form-grid" style={{ marginTop: '0.75rem' }}>
-          <Field label={`Método de pago (${selected.concept}, ${money.format(selected.amount)})`}>
+          <Field label={`Método de pago — ${selected.studentFullName ?? 'estudiante'}: ${selected.concept}, ${money.format(selected.amount)}`}>
             <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}>
               <option>Transferencia</option>
               <option>Efectivo</option>
@@ -185,6 +206,8 @@ function PendingDebtsSection() {
 
 function ConfirmedPaymentsSection() {
   const payments = useConfirmedPayments()
+  const students = useDebtorStudents()
+  const nameById = new Map((students.data ?? []).map((s) => [s.studentId, s.fullName]))
 
   return (
     <section className="card">
@@ -196,13 +219,14 @@ function ConfirmedPaymentsSection() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Pago</th><th>Monto</th><th>Estado</th><th>Fecha</th></tr>
+              <tr><th>Estudiante</th><th>Monto</th><th>Referencia</th><th>Estado</th><th>Fecha</th></tr>
             </thead>
             <tbody>
               {payments.data.map((payment) => (
                 <tr key={payment.paymentId}>
-                  <td><small>{payment.paymentId}</small></td>
+                  <td>{nameById.get(payment.studentId) ?? '—'}</td>
                   <td>{money.format(payment.amount)}</td>
+                  <td><small>{payment.reference ?? payment.paymentId.slice(0, 8)}</small></td>
                   <td><Badge tone={statusTone(payment.status)}>{payment.status}</Badge></td>
                   <td>{new Date(payment.confirmedAt).toLocaleString()}</td>
                 </tr>

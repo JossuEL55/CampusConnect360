@@ -5,8 +5,7 @@ using SharedKernel.Events;
 
 namespace AnalyticsService.Projections;
 
-// Proyecta cada evento del bus en las tablas de lectura, dentro de una sola transacción.
-// Patrón Idempotent Receiver: si el eventId ya está en processed_events, no se reaplica.
+// Proyecta cada evento a las tablas de lectura en una transacción idempotente (processed_events).
 public sealed class EventProjector(NpgsqlDataSource dataSource, ILogger<EventProjector> logger)
 {
     public async Task<bool> ApplyAsync(EventEnvelope<JsonElement> envelope, CancellationToken cancellationToken)

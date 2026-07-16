@@ -43,3 +43,8 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+# Documentos internos del equipo (entrega directa al docente, no repo publico)
+docs/ARQUITECTURA.md
+docs/BITACORA.md
+docs/GUION-DEMO.md
+docs/GUIA-ESTUDIO.md
